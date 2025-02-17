@@ -8,6 +8,7 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+// конструкция для minsdk = 23
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
@@ -16,7 +17,7 @@ if (localPropertiesFile.exists()) {
     }
 }
 def flutterMinSdkVersion = localProperties.getProperty('flutter.minSdkVersion')
-
+// конец конструкции
 
 android {
     namespace = "com.example.atlanta"
