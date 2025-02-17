@@ -73,6 +73,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _deleteWorkout(String docId) async {
     await FirebaseFirestore.instance.collection('Workouts').doc(docId).delete();
+    setState(() {
+      _workouts.removeWhere((workout) => _workoutDocs.indexOf(docId) == _workouts.indexOf(workout));
+      _workoutDocs.remove(docId);
+    });
   }
 
   @override

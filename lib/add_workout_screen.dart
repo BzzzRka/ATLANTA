@@ -9,69 +9,117 @@ class AddWorkoutScreen extends StatefulWidget {
 
 class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
   final TextEditingController _titleController = TextEditingController();
-  final List<Exercise> _exercises = [];
+  List<Exercise> _exercises = [];
 
   void _addExercise() {
-    setState(() {
-      _exercises.add(Exercise(name: 'New Exercise', durationInSeconds: 30));
-    });
+    TextEditingController nameController = TextEditingController();
+    TextEditingController durationController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Add Exercise'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(labelText: 'Exercise Name'),
+              ),
+              TextField(
+                controller: durationController,
+                decoration: InputDecoration(labelText: 'Duration (seconds)'),
+                keyboardType: TextInputType.number,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (nameController.text.isNotEmpty && durationController.text.isNotEmpty) {
+                  setState(() {
+                    _exercises.add(
+                      Exercise(
+                        name: nameController.text,
+                        durationInSeconds: int.parse(durationController.text),
+                      ),
+                    );
+                  });
+                }
+                Navigator.pop(context);
+              },
+              child: Text('Add'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _saveWorkout() async {
-    if (_titleController.text.isEmpty || _exercises.isEmpty) return;
+    if (_titleController.text.isEmpty || _exercises.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please add a title and at least one exercise')),
+      );
+      return;
+    }
 
-    // Создаем объект тренировки
-    Workout newWorkout = Workout(
-      title: _titleController.text,
-      exercises: _exercises,
-    );
+    try {
+      await FirebaseFirestore.instance.collection('Workouts').add({
+        'title': _titleController.text,
+        'exercises': _exercises
+            .map((e) => {'name': e.name, 'duration': e.durationInSeconds})
+            .toList(),
+      });
 
-    // Сохраняем в Firestore
-    await FirebaseFirestore.instance.collection('Workouts').add({
-      'title': newWorkout.title,
-      'exercises': newWorkout.exercises
-          .map((e) => {'name': e.name, 'duration': e.durationInSeconds})
-          .toList(),
-    });
-
-    Navigator.pop(context);
+      Navigator.pop(context);
+    } catch (error) {
+      print('Error saving workout: $error');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to save workout. Try again.')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Add Workout')),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
+      appBar: AppBar(title: Text('New Workout')),
+      body: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          children: [
+            TextField(
               controller: _titleController,
               decoration: InputDecoration(labelText: 'Workout Title'),
             ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _exercises.length,
-              itemBuilder: (context, index) {
-                return ListTile(
-                  title: Text(_exercises[index].name),
-                  subtitle: Text('${_exercises[index].durationInSeconds} sec'),
-                  trailing: IconButton(
-                    icon: Icon(Icons.delete),
-                    onPressed: () {
-                      setState(() {
-                        _exercises.removeAt(index);
-                      });
-                    },
-                  ),
-                );
-              },
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: _addExercise,
+              child: Text('Add Exercise'),
             ),
-          ),
-          ElevatedButton(onPressed: _addExercise, child: Text('Add Exercise')),
-          ElevatedButton(onPressed: _saveWorkout, child: Text('Save Workout')),
-        ],
+            Expanded(
+              child: ListView.builder(
+                itemCount: _exercises.length,
+                itemBuilder: (context, index) {
+                  return ListTile(
+                    title: Text(_exercises[index].name),
+                    subtitle: Text('${_exercises[index].durationInSeconds} sec'),
+                  );
+                },
+              ),
+            ),
+            ElevatedButton(
+              onPressed: _saveWorkout,
+              child: Text('Save Workout'),
+            ),
+          ],
+        ),
       ),
     );
   }
