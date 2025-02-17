@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'WorkoutScreen.dart';
+import 'add_workout_screen.dart';
 import 'models.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -28,37 +30,50 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class HomeScreen extends StatelessWidget {
-  final List<Workout> workouts = [
-    Workout(
-      title: 'Morning Workoutе',
-      exercises: [
-        Exercise(name: 'Push-ups', durationInSeconds: 30),
-        Exercise(name: 'Squats', durationInSeconds: 30),
-      ],
-    ),
-    Workout(
-      title: 'Evening Stretch',
-      exercises: [
-        Exercise(name: 'Plank', durationInSeconds: 60),
-        Exercise(name: 'Leg Raises', durationInSeconds: 40),
-      ],
-    ),
-  ];
+class HomeScreen extends StatefulWidget {
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  List<Workout> _workouts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWorkouts();
+  }
+
+  void _loadWorkouts() async {
+    FirebaseFirestore.instance.collection('Workouts').snapshots().listen((snapshot) {
+      List<Workout> workouts = snapshot.docs.map((doc) {
+        var data = doc.data();
+        return Workout(
+          title: data['title'],
+          exercises: (data['exercises'] as List)
+              .map((e) => Exercise(name: e['name'], durationInSeconds: e['duration']))
+              .toList(),
+        );
+      }).toList();
+
+      setState(() {
+        _workouts = workouts;
+      });
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('My Workouts')),
       body: ListView.builder(
-        itemCount: workouts.length,
+        itemCount: _workouts.length,
         itemBuilder: (context, index) {
-          final workout = workouts[index];
+          final workout = _workouts[index];
           return ListTile(
             title: Text(workout.title),
             subtitle: Text('${workout.exercises.length} exercises'),
             onTap: () {
-              // Переход к экрану тренировки
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -71,7 +86,10 @@ class HomeScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Логика для добавления новой тренировки (пока не реализовано)
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => AddWorkoutScreen()),
+          );
         },
         child: Icon(Icons.add),
       ),
