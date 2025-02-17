@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "778451528930",
+    "project_id": "atlanta-c9d18",
+    "storage_bucket": "atlanta-c9d18.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:778451528930:android:ff2cb12fb6076ee17602bb",
+        "android_client_info": {
+          "package_name": "com.example.atlanta"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "778451528930-petuni8u8grjirr0l8jnd3ktb1br923k.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDjpybxeKuGE3wYHBqjQEH11rAHXODWqVY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "778451528930-petuni8u8grjirr0l8jnd3ktb1br923k.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

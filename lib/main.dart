@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
 import 'WorkoutScreen.dart';
 import 'models.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized(); // необходимо
+
+  await Firebase.initializeApp( // необходимо
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   runApp(MyApp());
 }
 
