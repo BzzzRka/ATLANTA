@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'WorkoutScreen.dart';
 import 'models.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -30,7 +31,7 @@ class MyApp extends StatelessWidget {
 class HomeScreen extends StatelessWidget {
   final List<Workout> workouts = [
     Workout(
-      title: 'Morning Workout',
+      title: 'Morning Workoutе',
       exercises: [
         Exercise(name: 'Push-ups', durationInSeconds: 30),
         Exercise(name: 'Squats', durationInSeconds: 30),
