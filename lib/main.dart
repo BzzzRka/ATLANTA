@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'WorkoutScreen.dart';
 import 'add_workout_screen.dart';
+import 'edit_workout_screen.dart';
 import 'models.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -37,6 +38,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<Workout> _workouts = [];
+  List<String> _workoutDocs = []; // Список для хранения ID документов
 
   @override
   void initState() {
@@ -44,22 +46,33 @@ class _HomeScreenState extends State<HomeScreen> {
     _loadWorkouts();
   }
 
-  void _loadWorkouts() async {
+  void _loadWorkouts() {
     FirebaseFirestore.instance.collection('Workouts').snapshots().listen((snapshot) {
-      List<Workout> workouts = snapshot.docs.map((doc) {
+      List<Workout> workouts = [];
+      List<String> docIds = [];
+
+      for (var doc in snapshot.docs) {
         var data = doc.data();
-        return Workout(
-          title: data['title'],
-          exercises: (data['exercises'] as List)
-              .map((e) => Exercise(name: e['name'], durationInSeconds: e['duration']))
-              .toList(),
+        workouts.add(
+          Workout(
+            title: data['title'],
+            exercises: (data['exercises'] as List)
+                .map((e) => Exercise(name: e['name'], durationInSeconds: e['duration']))
+                .toList(),
+          ),
         );
-      }).toList();
+        docIds.add(doc.id); // Добавляем ID документа
+      }
 
       setState(() {
         _workouts = workouts;
+        _workoutDocs = docIds; // Обновляем список ID
       });
     });
+  }
+
+  void _deleteWorkout(String docId) async {
+    await FirebaseFirestore.instance.collection('Workouts').doc(docId).delete();
   }
 
   @override
@@ -70,14 +83,20 @@ class _HomeScreenState extends State<HomeScreen> {
         itemCount: _workouts.length,
         itemBuilder: (context, index) {
           final workout = _workouts[index];
+          final docId = _workoutDocs[index]; // Теперь docId правильно заполняется
+
           return ListTile(
             title: Text(workout.title),
             subtitle: Text('${workout.exercises.length} exercises'),
+            trailing: IconButton(
+              icon: Icon(Icons.delete, color: Colors.red),
+              onPressed: () => _deleteWorkout(docId),
+            ),
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => WorkoutScreen(workout: workout),
+                  builder: (context) => EditWorkoutScreen(workout: workout, docId: docId),
                 ),
               );
             },
