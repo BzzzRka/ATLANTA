@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'models.dart';
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:vibration/vibration.dart'; // Импортируем пакет для вибрации
 
 class WorkoutScreen extends StatefulWidget {
   final Workout workout;
@@ -46,12 +47,17 @@ class _WorkoutScreenState extends State<WorkoutScreen> with SingleTickerProvider
   Future<void> _playSound(String fileName) async {
     await _player.play(AssetSource('sounds/$fileName'));
   }
+  Future<void> _vibrate() async {
+    if (await Vibration.hasVibrator()) {
+      Vibration.vibrate(duration: 500); // Вибрация на 500 миллисекунд
+    }
+  }
 
   void _startTimer() {
     if (_timer != null && _timer!.isActive) return;
 
     _playSound('start.mp3');
-
+    _vibrate();
     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
       if (!_isPaused) {
         setState(() {
@@ -74,6 +80,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> with SingleTickerProvider
   void _nextExercise() {
     if (_currentExerciseIndex < exercises.length - 1) {
       _playSound('next.mp3');
+      _vibrate();
       setState(() {
         _currentExerciseIndex++;
         _remainingTime = exercises[_currentExerciseIndex].durationInSeconds;
@@ -82,6 +89,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> with SingleTickerProvider
     } else {
       _timer?.cancel();
       _playSound('finish.mp3');
+      _vibrate();
       _showCompletionDialog();
     }
   }
