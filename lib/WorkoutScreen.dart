@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'models.dart';
 import 'dart:async';
-import 'package:audioplayers/audioplayers.dart'; // Импортируем аудиоплеер
+import 'package:audioplayers/audioplayers.dart';
 
 class WorkoutScreen extends StatefulWidget {
   final Workout workout;
@@ -12,37 +12,45 @@ class WorkoutScreen extends StatefulWidget {
   _WorkoutScreenState createState() => _WorkoutScreenState();
 }
 
-class _WorkoutScreenState extends State<WorkoutScreen> {
+class _WorkoutScreenState extends State<WorkoutScreen> with SingleTickerProviderStateMixin {
   late List<Exercise> exercises;
   Timer? _timer;
   int _remainingTime = 0;
   int _currentExerciseIndex = 0;
   bool _isPaused = false;
 
-  final AudioPlayer _player = AudioPlayer(); // Создаём плеер
+  final AudioPlayer _player = AudioPlayer();
+  late AnimationController _animationController;
 
   @override
   void initState() {
     super.initState();
     exercises = widget.workout.exercises;
     _remainingTime = exercises[_currentExerciseIndex].durationInSeconds;
+
+    _animationController = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 500),
+    );
+    _animationController.forward();
   }
 
   @override
   void dispose() {
     _timer?.cancel();
-    _player.dispose(); // Освобождаем плеер
+    _player.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
   Future<void> _playSound(String fileName) async {
-    await _player.play(AssetSource('sounds/$fileName')); // Добавляем 'sounds/'
+    await _player.play(AssetSource('sounds/$fileName'));
   }
 
   void _startTimer() {
     if (_timer != null && _timer!.isActive) return;
 
-    _playSound('start.mp3'); // Звук старта тренировки
+    _playSound('start.mp3');
 
     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
       if (!_isPaused) {
@@ -65,14 +73,15 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
   void _nextExercise() {
     if (_currentExerciseIndex < exercises.length - 1) {
-      _playSound('next.mp3'); // Звук смены упражнения
+      _playSound('next.mp3');
       setState(() {
         _currentExerciseIndex++;
         _remainingTime = exercises[_currentExerciseIndex].durationInSeconds;
+        _animationController.forward(from: 0);
       });
     } else {
       _timer?.cancel();
-      _playSound('finish.mp3'); // Звук завершения тренировки
+      _playSound('finish.mp3');
       _showCompletionDialog();
     }
   }
@@ -98,63 +107,84 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   @override
   Widget build(BuildContext context) {
     final exercise = exercises[_currentExerciseIndex];
-    double progress = 1 - (_remainingTime / exercise.durationInSeconds);
 
     return Scaffold(
       appBar: AppBar(title: Text(widget.workout.title)),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            exercise.name,
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          // Плавная смена названия упражнения
+          FadeTransition(
+            opacity: _animationController,
+            child: Text(
+              exercise.name,
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
           ),
           SizedBox(height: 20),
 
-          // Анимация прогресса
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              SizedBox(
-                width: 150,
-                height: 150,
-                child: CircularProgressIndicator(
-                  value: progress,
-                  strokeWidth: 8,
-                  backgroundColor: Colors.grey[300],
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-                ),
-              ),
-              Text(
-                '$_remainingTime s',
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-              ),
-            ],
+          // Плавный прогресс-бар
+          TweenAnimationBuilder<double>(
+            tween: Tween(
+              begin: (_remainingTime == exercise.durationInSeconds)
+                  ? 1 - (_remainingTime / exercise.durationInSeconds)
+                  : 1.0, // Фикс: при старте не делаем откат
+              end: 1 - (_remainingTime / exercise.durationInSeconds),
+            ),
+            duration: Duration(milliseconds: 500),
+            builder: (context, value, child) {
+              return Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    width: 150,
+                    height: 150,
+                    child: CircularProgressIndicator(
+                      value: value,
+                      strokeWidth: 8,
+                      backgroundColor: Colors.grey[300],
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                    ),
+                  ),
+                  Text(
+                    '$_remainingTime s',
+                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                  ),
+                ],
+              );
+            },
           ),
 
           SizedBox(height: 20),
 
-          // Кнопки управления
+          // Анимированные кнопки
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              ElevatedButton(
-                onPressed: _startTimer,
-                child: Text('Start'),
-              ),
+              _buildAnimatedButton('Start', _startTimer),
               SizedBox(width: 10),
-              ElevatedButton(
-                onPressed: _pauseTimer,
-                child: Text(_isPaused ? 'Resume' : 'Pause'),
-              ),
+              _buildAnimatedButton(_isPaused ? 'Resume' : 'Pause', _pauseTimer),
               SizedBox(width: 10),
-              ElevatedButton(
-                onPressed: _nextExercise,
-                child: Text('Skip'),
-              ),
+              _buildAnimatedButton('Skip', _nextExercise),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  // Анимированная кнопка
+  Widget _buildAnimatedButton(String text, VoidCallback onPressed) {
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        child: Text(text),
       ),
     );
   }
