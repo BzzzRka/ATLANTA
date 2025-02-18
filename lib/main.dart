@@ -99,9 +99,25 @@ class _HomeScreenState extends State<HomeScreen> {
           return ListTile(
             title: Text(workout.title),
             subtitle: Text('${workout.exercises.length} exercises'),
-            trailing: IconButton(
-              icon: Icon(Icons.delete, color: Colors.red),
-              onPressed: () => _deleteWorkout(docId),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.play_arrow, color: Colors.green),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => WorkoutScreen(workout: workout),
+                      ),
+                    );
+                  },
+                ),
+                IconButton(
+                  icon: Icon(Icons.delete, color: Colors.red),
+                  onPressed: () => _deleteWorkout(docId),
+                ),
+              ],
             ),
             onTap: () {
               Navigator.push(

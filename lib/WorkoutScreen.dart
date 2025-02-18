@@ -74,7 +74,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           content: Text('Great job!'),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pop(context); // Закрываем экран тренировки
+              },
               child: Text('OK'),
             ),
           ],
