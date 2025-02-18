@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'models.dart';
 import 'dart:async';
+import 'package:audioplayers/audioplayers.dart'; // Импортируем аудиоплеер
 
 class WorkoutScreen extends StatefulWidget {
   final Workout workout;
@@ -18,6 +19,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   int _currentExerciseIndex = 0;
   bool _isPaused = false;
 
+  final AudioPlayer _player = AudioPlayer(); // Создаём плеер
+
   @override
   void initState() {
     super.initState();
@@ -28,11 +31,18 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _player.dispose(); // Освобождаем плеер
     super.dispose();
+  }
+
+  Future<void> _playSound(String fileName) async {
+    await _player.play(AssetSource('sounds/$fileName')); // Добавляем 'sounds/'
   }
 
   void _startTimer() {
     if (_timer != null && _timer!.isActive) return;
+
+    _playSound('start.mp3'); // Звук старта тренировки
 
     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
       if (!_isPaused) {
@@ -55,12 +65,14 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
   void _nextExercise() {
     if (_currentExerciseIndex < exercises.length - 1) {
+      _playSound('next.mp3'); // Звук смены упражнения
       setState(() {
         _currentExerciseIndex++;
         _remainingTime = exercises[_currentExerciseIndex].durationInSeconds;
       });
     } else {
       _timer?.cancel();
+      _playSound('finish.mp3'); // Звук завершения тренировки
       _showCompletionDialog();
     }
   }
@@ -74,10 +86,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
           content: Text('Great job!'),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pop(context); // Закрываем экран тренировки
-              },
+              onPressed: () => Navigator.pop(context),
               child: Text('OK'),
             ),
           ],
