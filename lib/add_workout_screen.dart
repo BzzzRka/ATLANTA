@@ -70,6 +70,7 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
     }
 
     try {
+      // Добавляем новую тренировку в базу данных
       await FirebaseFirestore.instance.collection('Workouts').add({
         'title': _titleController.text,
         'exercises': _exercises
@@ -77,7 +78,8 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
             .toList(),
       });
 
-      Navigator.pop(context);
+      // Возвращаемся на главный экран после успешного добавления
+      Navigator.pop(context); // Это возвращает на экран с обновленным списком тренировок
     } catch (error) {
       print('Error saving workout: $error');
       ScaffoldMessenger.of(context).showSnackBar(
