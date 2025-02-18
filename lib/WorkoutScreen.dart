@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'main.dart';
 import 'models.dart';
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:vibration/vibration.dart'; // Импортируем пакет для вибрации
+import 'package:shared_preferences/shared_preferences.dart'; // Импортируем SharedPreferences
 
 class WorkoutScreen extends StatefulWidget {
   final Workout workout;
@@ -27,7 +29,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> with SingleTickerProvider
   void initState() {
     super.initState();
     exercises = widget.workout.exercises;
-    _remainingTime = exercises[_currentExerciseIndex].durationInSeconds;
+    _loadProgress(); // Загружаем сохраненный прогресс
 
     _animationController = AnimationController(
       vsync: this,
@@ -44,9 +46,43 @@ class _WorkoutScreenState extends State<WorkoutScreen> with SingleTickerProvider
     super.dispose();
   }
 
+  // Сохранение прогресса
+  Future<void> _saveProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('currentExerciseIndex', _currentExerciseIndex);
+    await prefs.setInt('remainingTime', _remainingTime);
+  }
+  // очистка
+  void _clearProgress() async {
+    _remainingTime = 0;
+    _currentExerciseIndex = 0;
+  }
+  // Загрузка прогресса
+  Future<void> _loadProgress() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedIndex = prefs.getInt('currentExerciseIndex');
+    final savedTime = prefs.getInt('remainingTime');
+
+    if (savedIndex != null && savedTime != null) {
+      setState(() {
+        _currentExerciseIndex = savedIndex;
+        _remainingTime = savedTime;
+      });
+    } else {
+      setState(() {
+        _remainingTime = exercises[_currentExerciseIndex].durationInSeconds;
+      });
+    }
+    if (_currentExerciseIndex == 0 && _remainingTime == 0) {
+      setState(() {
+        _remainingTime = exercises[_currentExerciseIndex].durationInSeconds;
+      });
+    }
+  }
   Future<void> _playSound(String fileName) async {
     await _player.play(AssetSource('sounds/$fileName'));
   }
+
   Future<void> _vibrate() async {
     if (await Vibration.hasVibrator()) {
       Vibration.vibrate(duration: 500); // Вибрация на 500 миллисекунд
@@ -90,8 +126,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> with SingleTickerProvider
       _timer?.cancel();
       _playSound('finish.mp3');
       _vibrate();
+      _clearProgress();
       _showCompletionDialog();
     }
+
+    _saveProgress(); // Сохраняем прогресс после смены упражнения
   }
 
   void _showCompletionDialog() {
@@ -103,7 +142,13 @@ class _WorkoutScreenState extends State<WorkoutScreen> with SingleTickerProvider
           content: Text('Great job!'),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                Navigator.pop(context);  // Закрываем диалог
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomeScreen()),  // Переходим на главный экран
+                );
+              },
               child: Text('OK'),
             ),
           ],
