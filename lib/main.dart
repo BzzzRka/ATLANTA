@@ -53,20 +53,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
       for (var doc in snapshot.docs) {
         var data = doc.data();
-        workouts.add(
-          Workout(
-            title: data['title'],
-            exercises: (data['exercises'] as List)
-                .map((e) => Exercise(name: e['name'], durationInSeconds: e['duration']))
-                .toList(),
-          ),
-        );
-        docIds.add(doc.id); // Добавляем ID документа
+
+        // Проверяем, есть ли у документа поле title и не равно ли оно null
+        if (data.containsKey('title') && data['title'] != null) {
+          workouts.add(
+            Workout(
+              title: data['title'],
+              exercises: (data['exercises'] as List?)
+                  ?.map((e) => Exercise(name: e['name'] ?? 'Unknown', durationInSeconds: e['duration'] ?? 0))
+                  .toList() ??
+                  [],
+            ),
+          );
+          docIds.add(doc.id);
+        } else {
+          //print("Ошибка: документ ${doc.id} не содержит корректного title");
+        }
       }
 
       setState(() {
         _workouts = workouts;
-        _workoutDocs = docIds; // Обновляем список ID
+        _workoutDocs = docIds;
       });
     });
   }
@@ -117,5 +124,11 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Icon(Icons.add),
       ),
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadWorkouts();
   }
 }
