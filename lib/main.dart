@@ -52,6 +52,21 @@ class _HomeScreenState extends State<HomeScreen> {
       List<Workout> workouts = [];
       List<String> docIds = [];
 
+      // Добавляем базовые тренировки
+      for (var workoutData in WorkoutData.workouts) {
+        workouts.add(
+          Workout(
+            title: workoutData['title'],
+            exercises: (workoutData['exercises'] as List)
+                .map((e) => Exercise(name: e['name'], durationInSeconds: e['durationInSeconds']))
+                .toList(),
+            isBasic: true,
+          ),
+        );
+        docIds.add(''); // Используем пустую строку для базовых тренировок
+      }
+
+      // Добавляем пользовательские тренировки
       for (var doc in snapshot.docs) {
         var data = doc.data();
 
@@ -64,6 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ?.map((e) => Exercise(name: e['name'] ?? 'Unknown', durationInSeconds: e['duration'] ?? 0))
                   .toList() ??
                   [],
+              isBasic: data['isBasic'] ?? false,
             ),
           );
           docIds.add(doc.id);
@@ -80,11 +96,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _deleteWorkout(String docId) async {
-    await FirebaseFirestore.instance.collection('Workouts').doc(docId).delete();
-    setState(() {
-      _workouts.removeWhere((workout) => _workoutDocs.indexOf(docId) == _workouts.indexOf(workout));
-      _workoutDocs.remove(docId);
-    });
+    if (docId.isNotEmpty) {
+      await FirebaseFirestore.instance.collection('Workouts').doc(docId).delete();
+      setState(() {
+        _workouts.removeWhere((workout) => _workoutDocs.indexOf(docId) == _workouts.indexOf(workout));
+        _workoutDocs.remove(docId);
+      });
+    }
   }
 
   @override
@@ -97,37 +115,52 @@ class _HomeScreenState extends State<HomeScreen> {
           final workout = _workouts[index];
           final docId = _workoutDocs[index]; // Теперь docId правильно заполняется
 
-          return ListTile(
-            title: Text(workout.title),
-            subtitle: Text('${workout.exercises.length} exercises'),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: Icon(Icons.play_arrow, color: Colors.green),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => WorkoutScreen(workout: workout),
-                      ),
-                    );
-                  },
-                ),
-                IconButton(
-                  icon: Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => _deleteWorkout(docId),
-                ),
-              ],
+          return Card(
+            margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(color: workout.isBasic ? Colors.teal : Colors.blue, width: 2),
             ),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => EditWorkoutScreen(workout: workout, docId: docId),
-                ),
-              );
-            },
+            child: ListTile(
+              contentPadding: EdgeInsets.all(16),
+              title: Text(
+                workout.title,
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+              subtitle: Text('${workout.exercises.length} exercises'),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.play_arrow, color: Colors.green),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => WorkoutScreen(workout: workout),
+                        ),
+                      );
+                    },
+                  ),
+                  if (!workout.isBasic && docId.isNotEmpty) // Убираем кнопку удаления для базовых тренировок
+                    IconButton(
+                      icon: Icon(Icons.delete, color: Colors.red),
+                      onPressed: () => _deleteWorkout(docId),
+                    ),
+                ],
+              ),
+              onTap: () {
+                if (!workout.isBasic && docId.isNotEmpty) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EditWorkoutScreen(workout: workout, docId: docId),
+                    ),
+                  );
+                }
+              },
+            ),
           );
         },
       ),

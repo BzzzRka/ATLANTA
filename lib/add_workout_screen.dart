@@ -11,51 +11,87 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
   final TextEditingController _titleController = TextEditingController();
   List<Exercise> _exercises = [];
 
-  void _addExercise() {
-    TextEditingController nameController = TextEditingController();
-    TextEditingController durationController = TextEditingController();
+  void _addExerciseDialog(Exercise? exercise) {
+    TextEditingController nameController = TextEditingController(text: exercise?.name ?? '');
+    TextEditingController durationController = TextEditingController(text: exercise?.durationInSeconds.toString() ?? '');
+    TextEditingController repetitionsController = TextEditingController(text: exercise?.repetitions.toString() ?? '');
+    bool isTimeBased = exercise?.isTimeBased ?? true;
 
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: Text('Add Exercise'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(labelText: 'Exercise Name'),
-              ),
-              TextField(
-                controller: durationController,
-                decoration: InputDecoration(labelText: 'Duration (seconds)'),
-                keyboardType: TextInputType.number,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (nameController.text.isNotEmpty && durationController.text.isNotEmpty) {
-                  setState(() {
-                    _exercises.add(
-                      Exercise(
-                        name: nameController.text,
-                        durationInSeconds: int.parse(durationController.text),
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text(exercise == null ? 'Add Exercise' : 'Edit Exercise'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameController,
+                    decoration: InputDecoration(labelText: 'Exercise Name'),
+                  ),
+                  if (isTimeBased)
+                    TextField(
+                      controller: durationController,
+                      decoration: InputDecoration(labelText: 'Duration (seconds)'),
+                      keyboardType: TextInputType.number,
+                    )
+                  else
+                    TextField(
+                      controller: repetitionsController,
+                      decoration: InputDecoration(labelText: 'Repetitions'),
+                      keyboardType: TextInputType.number,
+                    ),
+                  Row(
+                    children: [
+                      Text('Time-based'),
+                      Switch(
+                        value: isTimeBased,
+                        onChanged: (value) {
+                          setState(() {
+                            isTimeBased = value;
+                          });
+                        },
                       ),
-                    );
-                  });
-                }
-                Navigator.pop(context);
-              },
-              child: Text('Add'),
-            ),
-          ],
+                    ],
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (nameController.text.isNotEmpty &&
+                        (isTimeBased ? durationController.text.isNotEmpty : repetitionsController.text.isNotEmpty)) {
+                      setState(() {
+                        if (exercise == null) {
+                          _exercises.add(
+                            Exercise(
+                              name: nameController.text,
+                              durationInSeconds: isTimeBased ? int.parse(durationController.text) : 0,
+                              repetitions: isTimeBased ? 0 : int.parse(repetitionsController.text),
+                              isTimeBased: isTimeBased,
+                            ),
+                          );
+                        } else {
+                          exercise.name = nameController.text;
+                          exercise.durationInSeconds = isTimeBased ? int.parse(durationController.text) : 0;
+                          exercise.repetitions = isTimeBased ? 0 : int.parse(repetitionsController.text);
+                          exercise.isTimeBased = isTimeBased;
+                        }
+                      });
+                    }
+                    Navigator.pop(context);
+                  },
+                  child: Text(exercise == null ? 'Add' : 'Save'),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -74,8 +110,14 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
       await FirebaseFirestore.instance.collection('Workouts').add({
         'title': _titleController.text,
         'exercises': _exercises
-            .map((e) => {'name': e.name, 'duration': e.durationInSeconds})
+            .map((e) => {
+          'name': e.name,
+          'duration': e.durationInSeconds,
+          'repetitions': e.repetitions,
+          'isTimeBased': e.isTimeBased,
+        })
             .toList(),
+        'isBasic': false,
       });
 
       // Возвращаемся на главный экран после успешного добавления
@@ -95,6 +137,7 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
       body: Padding(
         padding: EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             TextField(
               controller: _titleController,
@@ -102,16 +145,91 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
             ),
             SizedBox(height: 10),
             ElevatedButton(
-              onPressed: _addExercise,
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  builder: (context) {
+                    return Container(
+                      height: 400,
+                      child: Column(
+                        children: [
+                          ListTile(
+                            title: Text('Add Custom Exercise'),
+                            onTap: () {
+                              Navigator.pop(context);
+                              _addExerciseDialog(null);
+                            },
+                          ),
+                          Expanded(
+                            child: ListView(
+                              children: ExerciseData.exercises.map((exerciseData) {
+                                return ListTile(
+                                  title: Text(exerciseData['name']),
+                                  subtitle: Text(
+                                    exerciseData['isTimeBased']
+                                        ? '${exerciseData['durationInSeconds']} sec'
+                                        : '${exerciseData['repetitions']} reps',
+                                  ),
+                                  onTap: () {
+                                    Navigator.pop(context);
+                                    setState(() {
+                                      _exercises.add(
+                                        Exercise(
+                                          name: exerciseData['name'],
+                                          durationInSeconds: exerciseData['durationInSeconds'],
+                                          isTimeBased: true,
+                                        ),
+                                      );
+                                    });
+                                  },
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
               child: Text('Add Exercise'),
             ),
+            SizedBox(height: 10),
             Expanded(
               child: ListView.builder(
                 itemCount: _exercises.length,
                 itemBuilder: (context, index) {
-                  return ListTile(
-                    title: Text(_exercises[index].name),
-                    subtitle: Text('${_exercises[index].durationInSeconds} sec'),
+                  return Card(
+                    margin: EdgeInsets.symmetric(vertical: 4),
+                    elevation: 2,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: ListTile(
+                      title: Text(_exercises[index].name),
+                      subtitle: Text(
+                        _exercises[index].isTimeBased
+                            ? '${_exercises[index].durationInSeconds} sec'
+                            : '${_exercises[index].repetitions} reps',
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.edit),
+                            onPressed: () => _addExerciseDialog(_exercises[index]),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.delete),
+                            onPressed: () {
+                              setState(() {
+                                _exercises.removeAt(index);
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
                   );
                 },
               ),

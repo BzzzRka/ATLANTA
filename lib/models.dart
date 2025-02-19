@@ -1,16 +1,25 @@
 class Exercise {
   String name;
   int durationInSeconds;
+  int repetitions;
+  bool isTimeBased;
   bool isCompleted;
 
-  Exercise({required this.name, required this.durationInSeconds, this.isCompleted = false});
+  Exercise({
+    required this.name,
+    this.durationInSeconds = 0,
+    this.repetitions = 0,
+    this.isTimeBased = true,
+    this.isCompleted = false,
+  });
 }
 
 class Workout {
   String title;
   List<Exercise> exercises;
+  bool isBasic;
 
-  Workout({required this.title, required this.exercises});
+  Workout({required this.title, required this.exercises, this.isBasic = false});
 }
 
 class QuoteData {
@@ -63,26 +72,85 @@ class ExerciseData {
     {
       "name": "Push-ups",
       "durationInSeconds": 60,
+      "repetitions": 15,
+      "isTimeBased": false,
     },
     {
       "name": "Squats",
       "durationInSeconds": 90,
+      "repetitions": 20,
+      "isTimeBased": false,
     },
     {
       "name": "Plank",
       "durationInSeconds": 120,
+      "repetitions": 0,
+      "isTimeBased": true,
     },
     {
       "name": "Lunges",
       "durationInSeconds": 180,
+      "repetitions": 15,
+      "isTimeBased": false,
     },
     {
       "name": "Burpees",
       "durationInSeconds": 120,
+      "repetitions": 10,
+      "isTimeBased": false,
     },
     {
       "name": "Jumping Jacks",
       "durationInSeconds": 150,
+      "repetitions": 30,
+      "isTimeBased": false,
+    },
+    {
+      "name": "Mountain Climbers",
+      "durationInSeconds": 60,
+      "repetitions": 20,
+      "isTimeBased": false,
+    },
+    {
+      "name": "Tricep Dips",
+      "durationInSeconds": 90,
+      "repetitions": 15,
+      "isTimeBased": false,
+    },
+    {
+      "name": "High Knees",
+      "durationInSeconds": 60,
+      "repetitions": 30,
+      "isTimeBased": false,
+    },
+    {
+      "name": "Bicycle Crunches",
+      "durationInSeconds": 60,
+      "repetitions": 20,
+      "isTimeBased": false,
+    },
+  ];
+}
+
+class WorkoutData {
+  static final List<Map<String, dynamic>> workouts = [
+    {
+      "title": "Basic Workout",
+      "exercises": [
+        ExerciseData.exercises[0],
+        ExerciseData.exercises[1],
+        ExerciseData.exercises[2],
+      ],
+      "isBasic": true, // Флаг для базовой тренировки
+    },
+    {
+      "title": "Advanced Workout",
+      "exercises": [
+        ExerciseData.exercises[3],
+        ExerciseData.exercises[4],
+        ExerciseData.exercises[5],
+      ],
+      "isBasic": true, // Флаг для базовой тренировки
     },
   ];
 }
