@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'WorkoutScreen.dart';
 import 'add_workout_screen.dart';
 import 'edit_workout_screen.dart';
+import 'main_screen.dart';
 import 'models.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -26,7 +27,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: HomeScreen(),
+      home: MainScreen(),
     );
   }
 }
