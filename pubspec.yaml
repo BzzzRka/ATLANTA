@@ -69,6 +69,18 @@ flutter:
     - assets/sounds/start.mp3
     - assets/sounds/next.mp3
     - assets/sounds/finish.mp3
+    # гифки
+    - assets/animations/push-ups.gif
+    - assets/animations/squats.gif
+    - assets/animations/plank.gif
+    - assets/animations/lunges.gif
+    - assets/animations/burpees.gif
+    - assets/animations/arm_swings.gif
+    - assets/animations/mountain_climbers.gif
+    - assets/animations/tricep_dips.gif
+    - assets/animations/high_knees.gif
+    - assets/animations/bicycle_crunches.gif
+    - assets/images/default_exercise.png
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
 

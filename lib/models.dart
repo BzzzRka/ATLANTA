@@ -100,7 +100,7 @@ class ExerciseData {
       "isTimeBased": false,
     },
     {
-      "name": "Jumping Jacks",
+      "name": "Arm Swings",
       "durationInSeconds": 150,
       "repetitions": 30,
       "isTimeBased": false,

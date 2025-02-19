@@ -79,6 +79,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> with SingleTickerProvider
       });
     }
   }
+
   Future<void> _playSound(String fileName) async {
     await _player.play(AssetSource('sounds/$fileName'));
   }
@@ -146,7 +147,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> with SingleTickerProvider
                 Navigator.pop(context);  // Закрываем диалог
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => HomeScreen()),  // Переходим на главный экран
+                  MaterialPageRoute(builder: (context) => HomeScreen()),
                 );
               },
               child: Text('OK'),
@@ -155,6 +156,39 @@ class _WorkoutScreenState extends State<WorkoutScreen> with SingleTickerProvider
         );
       },
     );
+  }
+
+  Widget _getExerciseImage(String exerciseName) {
+    Map<String, String> exerciseImages = {
+      "Push-ups": "assets/animations/push-ups.gif",
+      "Squats": "assets/animations/squats.gif",
+      "Plank": "assets/animations/plank.gif",
+      "Lunges": "assets/animations/lunges.gif",
+      "Burpees": "assets/animations/burpees.gif",
+      "Arm Swings": "assets/animations/arm_swings.gif",
+      "Mountain Climbers": "assets/animations/mountain_climbers.gif",
+      "Tricep Dips": "assets/animations/tricep_dips.gif",
+      "High Knees": "assets/animations/high_knees.gif",
+      "Bicycle Crunches": "assets/animations/bicycle_crunches.gif",
+    };
+
+    if (exerciseImages.containsKey(exerciseName)) {
+      return Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey, width: 2),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Image.asset(exerciseImages[exerciseName]!, width: 200, height: 200),
+      );
+    } else {
+      return Container(
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey, width: 2),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Image.asset("assets/images/default_exercise.png", width: 200, height: 200),
+      );
+    }
   }
 
   @override
@@ -166,7 +200,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> with SingleTickerProvider
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Плавная смена названия упражнения
+          // Анимированная картинка упражнения
+          _getExerciseImage(exercise.name),
+          SizedBox(height: 20),
+
+          // Название упражнения
           FadeTransition(
             opacity: _animationController,
             child: Text(
@@ -176,7 +214,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> with SingleTickerProvider
           ),
           SizedBox(height: 20),
 
-          // Плавный прогресс-бар
+          // Таймер
           TweenAnimationBuilder<double>(
             tween: Tween(
               begin: (_remainingTime == exercise.durationInSeconds)
@@ -190,8 +228,8 @@ class _WorkoutScreenState extends State<WorkoutScreen> with SingleTickerProvider
                 alignment: Alignment.center,
                 children: [
                   SizedBox(
-                    width: 150,
-                    height: 150,
+                    width: 100,
+                    height: 100,
                     child: CircularProgressIndicator(
                       value: value,
                       strokeWidth: 8,
@@ -201,16 +239,27 @@ class _WorkoutScreenState extends State<WorkoutScreen> with SingleTickerProvider
                   ),
                   Text(
                     '$_remainingTime s',
-                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                 ],
               );
             },
           ),
-
           SizedBox(height: 20),
 
-          // Анимированные кнопки
+          // Шкала тренировки
+          Padding(
+            padding: const EdgeInsets.all(10.0),
+            child: LinearProgressIndicator(
+              value: (_currentExerciseIndex + 1) / exercises.length,
+              minHeight: 10,
+              backgroundColor: Colors.grey[300],
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+            ),
+          ),
+          SizedBox(height: 20),
+
+          // Кнопки
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
