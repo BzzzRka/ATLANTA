@@ -135,22 +135,51 @@ class ExerciseData {
 class WorkoutData {
   static final List<Map<String, dynamic>> workouts = [
     {
-      "title": "Basic Workout",
+      "title": "Warm-up Routine",
       "exercises": [
-        ExerciseData.exercises[0],
-        ExerciseData.exercises[1],
-        ExerciseData.exercises[2],
+        ExerciseData.exercises[5],  // Jumping Jacks
+        ExerciseData.exercises[8],  // High Knees
+        ExerciseData.exercises[6],  // Mountain Climbers
+        ExerciseData.exercises[2],  // Plank
+        ExerciseData.exercises[7],  // Tricep Dips
+        ExerciseData.exercises[1],  // Squats
+        ExerciseData.exercises[9],  // Bicycle Crunches
+        ExerciseData.exercises[0],  // Push-ups
+        ExerciseData.exercises[4],  // Burpees
+        ExerciseData.exercises[3],  // Lunges
+        ExerciseData.exercises[5],  // Jumping Jacks (повтор)
+        ExerciseData.exercises[8],  // High Knees (повтор)
+        ExerciseData.exercises[6],  // Mountain Climbers (повтор)
+        ExerciseData.exercises[2],  // Plank (повтор)
+        ExerciseData.exercises[7],  // Tricep Dips (повтор)
       ],
-      "isBasic": true, // Флаг для базовой тренировки
+      "isBasic": true,
     },
     {
-      "title": "Advanced Workout",
+      "title": "Full-body Strength",
       "exercises": [
-        ExerciseData.exercises[3],
-        ExerciseData.exercises[4],
-        ExerciseData.exercises[5],
+        ExerciseData.exercises[0],  // Push-ups
+        ExerciseData.exercises[1],  // Squats
+        ExerciseData.exercises[3],  // Lunges
+        ExerciseData.exercises[4],  // Burpees
+        ExerciseData.exercises[5],  // Jumping Jacks
+        ExerciseData.exercises[6],  // Mountain Climbers
+        ExerciseData.exercises[7],  // Tricep Dips
+        ExerciseData.exercises[8],  // High Knees
+        ExerciseData.exercises[9],  // Bicycle Crunches
+        ExerciseData.exercises[0],  // Push-ups (повтор)
+        ExerciseData.exercises[1],  // Squats (повтор)
+        ExerciseData.exercises[3],  // Lunges (повтор)
+        ExerciseData.exercises[4],  // Burpees (повтор)
+        ExerciseData.exercises[5],  // Jumping Jacks (повтор)
+        ExerciseData.exercises[6],  // Mountain Climbers (повтор)
+        ExerciseData.exercises[7],  // Tricep Dips (повтор)
+        ExerciseData.exercises[8],  // High Knees (повтор)
+        ExerciseData.exercises[9],  // Bicycle Crunches (повтор)
+        ExerciseData.exercises[2],  // Plank
+        ExerciseData.exercises[2],  // Plank (повтор)
       ],
-      "isBasic": true, // Флаг для базовой тренировки
+      "isBasic": true,
     },
   ];
 }
