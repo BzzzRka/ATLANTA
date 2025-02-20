@@ -120,7 +120,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> with SingleTickerProvider
       _vibrate();
       setState(() {
         _currentExerciseIndex++;
-        _remainingTime = exercises[_currentExerciseIndex].durationInSeconds;
+        if (exercises[_currentExerciseIndex].isTimeBased) {
+          _remainingTime = exercises[_currentExerciseIndex].durationInSeconds;
+        } else {
+          _remainingTime = exercises[_currentExerciseIndex].repetitions;
+        }
         _animationController.forward(from: 0);
       });
     } else {
@@ -172,23 +176,19 @@ class _WorkoutScreenState extends State<WorkoutScreen> with SingleTickerProvider
       "Bicycle Crunches": "assets/animations/bicycle_crunches.gif",
     };
 
-    if (exerciseImages.containsKey(exerciseName)) {
-      return Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey, width: 2),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Image.asset(exerciseImages[exerciseName]!, width: 200, height: 200),
-      );
-    } else {
-      return Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey, width: 2),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Image.asset("assets/images/default_exercise.png", width: 200, height: 200),
-      );
-    }
+    return Container(
+      width: 200,
+      height: 200,
+      decoration: BoxDecoration(
+        color: Colors.white, // Белый фон
+        border: Border.all(color: Colors.grey, width: 2),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Image.asset(
+        exerciseImages[exerciseName] ?? "assets/images/default_exercise.png",
+        fit: BoxFit.contain,
+      ),
+    );
   }
 
   @override
@@ -214,37 +214,34 @@ class _WorkoutScreenState extends State<WorkoutScreen> with SingleTickerProvider
           ),
           SizedBox(height: 20),
 
-          // Таймер
-          TweenAnimationBuilder<double>(
-            tween: Tween(
-              begin: (_remainingTime == exercise.durationInSeconds)
-                  ? 1 - (_remainingTime / exercise.durationInSeconds)
-                  : 1.0, // Фикс: при старте не делаем откат
-              end: 1 - (_remainingTime / exercise.durationInSeconds),
+          SizedBox(
+            height: 100, // Фиксированная высота для таймера, чтобы GIF не двигался
+            child: (exercise.isTimeBased)
+                ? Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 100,
+                  height: 100,
+                  child: CircularProgressIndicator(
+                    value: (_remainingTime / exercise.durationInSeconds).clamp(0.0, 1.0),
+                    strokeWidth: 8,
+                    backgroundColor: Colors.grey[300],
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                  ),
+                ),
+                Text(
+                  '$_remainingTime s',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+              ],
+            )
+                : Text(
+              '$_remainingTime reps left',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            duration: Duration(milliseconds: 500),
-            builder: (context, value, child) {
-              return Stack(
-                alignment: Alignment.center,
-                children: [
-                  SizedBox(
-                    width: 100,
-                    height: 100,
-                    child: CircularProgressIndicator(
-                      value: value,
-                      strokeWidth: 8,
-                      backgroundColor: Colors.grey[300],
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-                    ),
-                  ),
-                  Text(
-                    '$_remainingTime s',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                  ),
-                ],
-              );
-            },
           ),
+
           SizedBox(height: 20),
 
           // Шкала тренировки
@@ -255,6 +252,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> with SingleTickerProvider
               minHeight: 10,
               backgroundColor: Colors.grey[300],
               valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
           SizedBox(height: 20),

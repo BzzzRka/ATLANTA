@@ -58,7 +58,12 @@ class _HomeScreenState extends State<HomeScreen> {
           Workout(
             title: workoutData['title'],
             exercises: (workoutData['exercises'] as List)
-                .map((e) => Exercise(name: e['name'], durationInSeconds: e['durationInSeconds']))
+                .map((e) => Exercise(
+              name: e['name'],
+              durationInSeconds: e['durationInSeconds'] ?? 0,
+              repetitions: e['repetitions'] ?? 0,
+              isTimeBased: e['isTimeBased'] ?? true,
+            ))
                 .toList(),
             isBasic: true,
           ),
@@ -76,7 +81,12 @@ class _HomeScreenState extends State<HomeScreen> {
             Workout(
               title: data['title'],
               exercises: (data['exercises'] as List?)
-                  ?.map((e) => Exercise(name: e['name'] ?? 'Unknown', durationInSeconds: e['duration'] ?? 0))
+                  ?.map((e) => Exercise(
+                name: e['name'] ?? 'Unknown',
+                durationInSeconds: e['duration'] ?? 0,
+                repetitions: e['repetitions'] ?? 0,
+                isTimeBased: e['isTimeBased'] ?? true,
+              ))
                   .toList() ??
                   [],
               isBasic: data['isBasic'] ?? false,
@@ -84,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
           );
           docIds.add(doc.id);
         } else {
-          //print("Ошибка: документ ${doc.id} не содержит корректного title");
+          print("Ошибка: документ ${doc.id} не содержит корректного title");
         }
       }
 
@@ -94,6 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
       });
     });
   }
+
 
   void _deleteWorkout(String docId) async {
     if (docId.isNotEmpty) {

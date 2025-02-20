@@ -26,9 +26,18 @@ class _EditWorkoutScreenState extends State<EditWorkoutScreen> {
   void _saveChanges() async {
     if (_titleController.text.isEmpty || _exercises.isEmpty) return;
 
+    List<Map<String, dynamic>> exercisesData = _exercises.map((e) {
+      return {
+        'name': e.name,
+        'duration': e.durationInSeconds,
+        'repetitions': e.repetitions,
+        'isTimeBased': e.isTimeBased,
+      };
+    }).toList();
+
     await FirebaseFirestore.instance.collection('Workouts').doc(widget.docId).update({
       'title': _titleController.text,
-      'exercises': _exercises.map((e) => {'name': e.name, 'duration': e.durationInSeconds}).toList(),
+      'exercises': exercisesData,
     });
 
     Navigator.pop(context);
@@ -51,9 +60,14 @@ class _EditWorkoutScreenState extends State<EditWorkoutScreen> {
             child: ListView.builder(
               itemCount: _exercises.length,
               itemBuilder: (context, index) {
+                final exercise = _exercises[index];
                 return ListTile(
-                  title: Text(_exercises[index].name),
-                  subtitle: Text('${_exercises[index].durationInSeconds} sec'),
+                  title: Text(exercise.name),
+                  subtitle: Text(
+                    exercise.isTimeBased
+                        ? '${exercise.durationInSeconds} sec'
+                        : '${exercise.repetitions} reps',
+                  ),
                   trailing: IconButton(
                     icon: Icon(Icons.delete),
                     onPressed: () {
@@ -67,7 +81,9 @@ class _EditWorkoutScreenState extends State<EditWorkoutScreen> {
             ),
           ),
           ElevatedButton(
-              onPressed: _saveChanges, child: Text('Save Changes')),
+            onPressed: _saveChanges,
+            child: Text('Save Changes'),
+          ),
         ],
       ),
     );

@@ -176,8 +176,13 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
                                       _exercises.add(
                                         Exercise(
                                           name: exerciseData['name'],
-                                          durationInSeconds: exerciseData['durationInSeconds'],
-                                          isTimeBased: true,
+                                          durationInSeconds: exerciseData['isTimeBased']
+                                              ? exerciseData['durationInSeconds']
+                                              : 0,
+                                          repetitions: exerciseData['isTimeBased']
+                                              ? 0
+                                              : exerciseData['repetitions'],
+                                          isTimeBased: exerciseData['isTimeBased'],
                                         ),
                                       );
                                     });
@@ -199,6 +204,7 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
               child: ListView.builder(
                 itemCount: _exercises.length,
                 itemBuilder: (context, index) {
+                  final exercise = _exercises[index];
                   return Card(
                     margin: EdgeInsets.symmetric(vertical: 4),
                     elevation: 2,
@@ -206,18 +212,18 @@ class _AddWorkoutScreenState extends State<AddWorkoutScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: ListTile(
-                      title: Text(_exercises[index].name),
+                      title: Text(exercise.name),
                       subtitle: Text(
-                        _exercises[index].isTimeBased
-                            ? '${_exercises[index].durationInSeconds} sec'
-                            : '${_exercises[index].repetitions} reps',
+                        exercise.isTimeBased
+                            ? '${exercise.durationInSeconds} sec'
+                            : '${exercise.repetitions} reps',
                       ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
                             icon: Icon(Icons.edit),
-                            onPressed: () => _addExerciseDialog(_exercises[index]),
+                            onPressed: () => _addExerciseDialog(exercise),
                           ),
                           IconButton(
                             icon: Icon(Icons.delete),
