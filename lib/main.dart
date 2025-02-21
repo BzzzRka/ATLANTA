@@ -1,8 +1,10 @@
+import 'package:atlanta/register_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'WorkoutScreen.dart';
 import 'add_workout_screen.dart';
 import 'edit_workout_screen.dart';
+import 'login_screen.dart';
 import 'main_screen.dart';
 import 'models.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -27,7 +29,12 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MainScreen(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => LoginScreen(),
+        '/home': (context) => MainScreen(),
+        '/register': (context) => RegisterScreen(),
+      },
     );
   }
 }

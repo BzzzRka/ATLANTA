@@ -1,10 +1,12 @@
 import 'dart:math';
+import 'package:firebase_auth/firebase_auth.dart'; // Импортируйте FirebaseAuth
 import 'package:atlanta/stats_screen.dart';
 import 'package:flutter/material.dart';
 import 'main.dart';
 import 'models.dart';
 import 'quotes_screen.dart';
 import 'notes_screen.dart';
+import 'login_screen.dart'; // Импортируйте экран логина
 
 class MainScreen extends StatefulWidget {
   @override
@@ -32,6 +34,15 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Проверка, авторизован ли пользователь
+    final user = FirebaseAuth.instance.currentUser;
+
+    // Если пользователь не авторизован, показываем экран регистрации
+    if (user == null) {
+      return LoginScreen(); // Отправляем на экран входа
+    }
+
+    // Если пользователь авторизован, показываем основной экран
     return Scaffold(
       appBar: AppBar(title: Text('Atlanta Fitness')),
       body: Padding(
