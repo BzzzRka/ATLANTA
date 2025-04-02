@@ -53,6 +53,6 @@ class Bonus {
         size = 30 + Random().nextDouble() * 20; // Случайный размер
 }
 
-enum DifficultyLevel { easy, hard, infinite }
+enum DifficultyLevel { easy, hard, infinite, starDodging }
 
 DifficultyLevel currentLevel = DifficultyLevel.easy;

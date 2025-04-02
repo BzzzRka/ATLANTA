@@ -36,7 +36,6 @@ class GameLogic {
     required Function() playExplosionSound,
     required Function(Offset, double) addExplosion,
   }) {
-    print('Current lives before collision check: $lives');
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final spaceshipSize = screenWidth * 0.1;

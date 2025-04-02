@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:atlanta/MainMenu.dart';
 import 'package:atlanta/res_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -20,7 +21,7 @@ class SpaceDefenderApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: DifficultySelectionScreen(),
+      home: MainMenScreen(),
     );
   }
 }
@@ -396,6 +397,19 @@ class _GameScreenState extends State<GameScreen> {
         appBar: AppBar(
           title: Text('Космический защитник'),
           actions: [
+            // главное меню
+            IconButton(
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => MainMenScreen(),
+                  ),
+                );
+              },
+              icon: Icon(Icons.home),
+              tooltip: 'В главное меню',
+            ),
             // Кнопка паузы
             IconButton(
               onPressed: () {

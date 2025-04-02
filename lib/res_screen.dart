@@ -1,3 +1,4 @@
+import 'package:atlanta/MainMenu.dart';
 import 'package:flutter/material.dart';
 
 import 'dif_select.dart';
@@ -49,11 +50,11 @@ class ResultScreen extends StatelessWidget {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => DifficultySelectionScreen(),
+                    builder: (context) => MainMenScreen(),
                   ),
                 );
               },
-              child: Text('Выбрать уровень'),
+              child: Text('В главное меню'),
             ),
           ],
         ),

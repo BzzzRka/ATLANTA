@@ -1,15 +1,19 @@
+
 import 'package:atlanta/stardodging.dart';
+import 'package:atlanta/utils.dart';
 import 'package:flutter/material.dart';
+
+import 'InfoScreen.dart';
+import 'dif_select.dart';
 import 'main.dart';
 import 'models.dart';
 
-
-class DifficultySelectionScreen extends StatelessWidget {
+class MainMenScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Выберите уровень сложности'),
+        title: Text('Главное меню'),
       ),
       body: Center(
         child: Column(
@@ -20,11 +24,11 @@ class DifficultySelectionScreen extends StatelessWidget {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => GameScreen(difficulty: DifficultyLevel.easy),
+                    builder: (context) => DifficultySelectionScreen(),
                   ),
                 );
               },
-              child: Text('Легкий уровень'),
+              child: Text('Режим Астероиды'),
             ),
             SizedBox(height: 20),
             ElevatedButton(
@@ -32,23 +36,23 @@ class DifficultySelectionScreen extends StatelessWidget {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => GameScreen(difficulty: DifficultyLevel.hard),
+                    builder: (context) => DifficultySelectionScreenStar(),
                   ),
                 );
               },
-              child: Text('Сложный уровень'),
+              child: Text('Режим Звезды'),
             ),
             SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                Navigator.pushReplacement(
+                Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => GameScreen(difficulty: DifficultyLevel.infinite),
+                    builder: (context) => InfoScreen(),
                   ),
                 );
               },
-              child: Text('Бесконечный уровень'),
+              child: Text('Информация об игре'),
             ),
           ],
         ),
