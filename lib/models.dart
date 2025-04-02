@@ -6,6 +6,8 @@ class Asteroid {
   Offset position;
   double size;
   double speed;
+  double rotationAngle; // Угол поворота
+  final double rotationSpeed; // Скорость вращения
 
   Asteroid({double? speed})
       : position = Offset(
@@ -13,7 +15,9 @@ class Asteroid {
     0, // Начальная позиция над экраном
   ),
         size = 50 + Random().nextDouble() * 50, // Случайный размер
-        speed = speed ?? 1 + Random().nextDouble() * 2; // Скорость
+        speed = speed ?? 1 + Random().nextDouble() * 2, // Скорость
+        rotationAngle = Random().nextDouble() * 360, // Начальный угол
+        rotationSpeed = 0.5 + Random().nextDouble() * 2; // Случайная скорость вращения
 }
 
 // Класс для пуль

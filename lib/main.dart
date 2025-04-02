@@ -44,6 +44,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   double spaceshipPosition = 0; // Позиция корабля (от -1 до 1)
   int score = 0; // Количество уничтоженных астероидов
   int bestScore = 0; // Лучший счет
+  bool isPulsating = false; // Флаг для пульсации
   int lives = 3; // Количество жизней
   List<Asteroid> asteroids = []; // Список астероидов
   List<Bullet> bullets = []; // Список пуль
@@ -76,6 +77,7 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
     startBonusGeneration();
     startMovement();
     _startBackgroundMusic(); // Запускаем саундтрек
+    startPulsation(); // Запускаем пульсацию
   }
 
   @override
@@ -106,6 +108,14 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
       startAsteroidGeneration();
       startBonusGeneration();
     }
+  }
+
+  void startPulsation() {
+    Timer.periodic(Duration(milliseconds: 500), (timer) {
+      setState(() {
+        isPulsating = !isPulsating; // Переключаем состояние пульсации
+      });
+    });
   }
 
   // Check if the player has won
@@ -197,6 +207,12 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
               asteroid.position.dx,
               asteroid.position.dy + asteroid.speed,
             );
+
+            // Обновление угла поворота
+            asteroid.rotationAngle += asteroid.rotationSpeed;
+            if (asteroid.rotationAngle > 360) {
+              asteroid.rotationAngle -= 360; // Сброс угла после полного оборота
+            }
           }
 
           // Движение пуль вверх
@@ -478,10 +494,13 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                 left: screenWidth / 2 +
                     spaceshipPosition * screenWidth / 2 -
                     1.5 * spaceshipSize / 2,
-                child: Image.asset(
-                  'assets/spaceship.png',
-                  width: 1.5 * spaceshipSize,
-                  height: 1.5 * spaceshipSize,
+                child: Transform.scale(
+                  scale: isPulsating ? 1.1 : 1.0, // Масштаб увеличивается до 1.1
+                  child: Image.asset(
+                    'assets/spaceship.png',
+                    width: spaceshipSize * 1.5,
+                    height: spaceshipSize * 1.5,
+                  ),
                 ),
               ),
               // Астероиды
@@ -489,10 +508,13 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                 return Positioned(
                   top: asteroid.position.dy,
                   left: asteroid.position.dx,
-                  child: Image.asset(
-                    'assets/asteroid.png',
-                    width: asteroid.size,
-                    height: asteroid.size,
+                  child: Transform.rotate(
+                    angle: asteroid.rotationAngle * pi / 180, // Преобразование градусов в радианы
+                    child: Image.asset(
+                      'assets/asteroid.png',
+                      width: asteroid.size,
+                      height: asteroid.size,
+                    ),
                   ),
                 );
               }).toList(),
@@ -501,13 +523,21 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
                 return Positioned(
                   top: bullet.position.dy,
                   left: bullet.position.dx,
-                  child: Container(
-                    width: bullet.width,
-                    height: bullet.height,
-                    decoration: BoxDecoration(
-                      color: Colors.lightBlueAccent, // Цвет лазера
-                      borderRadius: BorderRadius.circular(
-                          5), // Закругленные края
+                  child: ShaderMask(
+                    shaderCallback: (Rect bounds) {
+                      return RadialGradient(
+                        colors: [Colors.transparent, Colors.lightBlueAccent],
+                        center: Alignment.center,
+                        radius: 0.5,
+                      ).createShader(bounds);
+                    },
+                    child: Container(
+                      width: bullet.width,
+                      height: bullet.height,
+                      decoration: BoxDecoration(
+                        color: Colors.lightBlueAccent,
+                        borderRadius: BorderRadius.circular(5),
+                      ),
                     ),
                   ),
                 );
