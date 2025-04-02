@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vibration/vibration.dart';
 import 'dif_select.dart';
 import 'models.dart'; // Импортируем классы из models.dart
 import 'game_logic.dart'; // Импортируем логику игры
@@ -24,7 +25,12 @@ class SpaceDefenderApp extends StatelessWidget {
     return MaterialApp(
       title: 'Космический защитник',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        // Настройка темы приложения
+        brightness: Brightness.dark, // Темная тема
+        scaffoldBackgroundColor: Colors.black, // Черный фон для всех экранов
+        appBarTheme: AppBarTheme(
+          color: Colors.black, // Черный цвет для AppBar
+        ),
       ),
       home: MainMenScreen(),
     );
@@ -290,6 +296,10 @@ class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
               updateScore: (value) => setState(() => score += value),
             );
             setState(() => lives = lives - 1);
+            // Вибрация при потере жизни
+            if (Vibration.hasVibrator() != null) {
+              Vibration.vibrate(duration: 500); // Вибрация длится 500 миллисекунд
+            }
             if (lives == 0) {
               movementTimer?.cancel();
               updateBestScore(); // Обновляем лучший счет

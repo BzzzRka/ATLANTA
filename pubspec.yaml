@@ -1,5 +1,5 @@
 name: atlanta
-description: "A new Flutter project."
+description: "A fun space dodging game."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -57,7 +57,7 @@ dev_dependencies:
 # following page: https://dart.dev/tools/pub/pubspec
 flutter_icons:
   android: true
-  image_path: "assets/images/logo.png"
+  image_path: "assets/logo.png"
 # The following section is specific to Flutter packages.
 flutter:
 
@@ -70,6 +70,8 @@ flutter:
   assets:
     - assets/logo.png
     - assets/spaceship.png
+    - assets/about.png
+    - assets/im.png
     - assets/asteroid.png
     - assets/planet.png
     - assets/background.jpg
@@ -78,8 +80,11 @@ flutter:
     - assets/star.gif
     - assets/ufo.gif
     - assets/bonus_life.gif
+    - assets/sounds/track.mp3
     - assets/sounds/shoot.mp3
     - assets/sounds/explosion.mp3
+    - assets/sounds/win.mp3
+    - assets/sounds/lose.mp3
     - assets/sounds/ship_explosion.mp3
     - assets/sounds/bonus_sound.mp3
     - assets/sounds/background_music.mp3

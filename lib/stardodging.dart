@@ -5,6 +5,7 @@ import 'package:atlanta/res_screen.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:vibration/vibration.dart';
 
 import 'MainMenu.dart';
 import 'game_logic.dart';
@@ -263,6 +264,10 @@ class _StarDodgingScreenState extends State<StarDodgingScreen> with WidgetsBindi
             updateScore: (value) => setState(() => score += value),
           );
           setState(() => lives = lives - 1);
+          // Вибрация при потере жизни
+          if (Vibration.hasVibrator() != null) {
+            Vibration.vibrate(duration: 500); // Вибрация длится 500 миллисекунд
+          }
           if (lives == 0) {
             movementTimer?.cancel();
             updateBestScore(); // Обновляем лучший счет
