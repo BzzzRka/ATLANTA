@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dif_select.dart';
 import 'models.dart'; // Импортируем классы из models.dart
 import 'game_logic.dart'; // Импортируем логику игры
 
@@ -18,12 +19,16 @@ class SpaceDefenderApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: GameScreen(),
+      home: DifficultySelectionScreen(),
     );
   }
 }
 
 class GameScreen extends StatefulWidget {
+  final DifficultyLevel difficulty;
+
+  GameScreen({required this.difficulty});
+
   @override
   _GameScreenState createState() => _GameScreenState();
 }
@@ -40,15 +45,26 @@ class _GameScreenState extends State<GameScreen> {
   Timer? asteroidTimer; // Таймер для создания новых астероидов
   Timer? bonusTimer; // Таймер для создания новых бонусов
   Timer? movementTimer; // Таймер для движения объектов
-  final AudioPlayer _audioPlayer = AudioPlayer(); // Для воспроизведения звуков
+  final AudioPlayer _audioPlayer = new AudioPlayer(); // Для воспроизведения звуков
   bool isPaused = false; // Флаг для состояния паузы
   bool isMusicPlaying = true; // Флаг для состояния саундтрека
-  AudioPlayer backgroundMusicPlayer = AudioPlayer(); // Отдельный аудиоплеер для саундтрека
+  final AudioPlayer backgroundMusicPlayer = new AudioPlayer(); // Отдельный аудиоплеер для саундтрека
+  int targetScore = 0; // Target score to win the game
 
   @override
   void initState() {
     super.initState();
     loadBestScore();
+
+    // Set target score based on difficulty
+    if (widget.difficulty == DifficultyLevel.easy) {
+      targetScore = 10;
+    } else if (widget.difficulty == DifficultyLevel.hard) {
+      targetScore = 1000;
+    } else {
+      targetScore = -1; // Infinite mode has no target score
+    }
+
     startAsteroidGeneration();
     startBonusGeneration();
     startMovement();
@@ -62,6 +78,33 @@ class _GameScreenState extends State<GameScreen> {
     movementTimer?.cancel();
     backgroundMusicPlayer.dispose(); // Освобождаем ресурсы аудиоплеера
     super.dispose();
+  }
+
+  // Check if the player has won
+  void checkWinCondition() {
+    if (targetScore > 0 && score >= targetScore) {
+      movementTimer?.cancel();
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text("Победа!"),
+          content: Text("Вы достигли цели: $score очков!"),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                resetGame();
+              },
+              child: Text("Играть снова"),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  void playEffect(String s) {
+    _audioPlayer.play(AssetSource(s));
   }
 
   // Загрузка лучшего результата
@@ -174,7 +217,7 @@ class _GameScreenState extends State<GameScreen> {
               );
 
               // Воспроизведение звука взрыва
-              _audioPlayer.play(AssetSource('sounds/explosion.mp3'));
+              playEffect('sounds/explosion.mp3');
 
               break; // Переходим к следующей пуле
             }
@@ -190,32 +233,43 @@ class _GameScreenState extends State<GameScreen> {
           asteroids: asteroids,
           context: context,
           lives: lives,
-          updateLives: (newLives) => setState(() => lives = newLives),
-          cancelMovement: () => movementTimer?.cancel(),
-          playExplosionSound: () => _audioPlayer.play(AssetSource('sounds/ship_explosion.mp3')),
+          playExplosionSound: () => playEffect('sounds/ship_explosion.mp3'),
           addExplosion: (position, size) => setState(() {
             explosions.add(Explosion(position: position, size: size));
           }),
         )) {
-          updateBestScore(); // Обновляем лучший счет
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text("Game Over"),
-              content: Text("Вы проиграли! Ваш счет: $score\nЛучший счет: $bestScore"),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context); // Закрыть диалог
-                    resetGame(); // Перезапустить игру
-                  },
-                  child: Text("Попробовать снова"),
-                ),
-              ],
-            ),
+          GameLogic.destroyAllAsteroids(
+            asteroids: asteroids,
+            explosions: explosions,
+            playExplosionSound: () => playEffect('sounds/explosion.mp3'),
+            updateScore: (value) => setState(() => score += value),
           );
+          setState(() => lives = lives - 1);
+          if (lives == 0) {
+            movementTimer?.cancel();
+            updateBestScore(); // Обновляем лучший счет
+            showDialog(
+              context: context,
+              builder: (context) =>
+                  AlertDialog(
+                    title: Text("Game Over"),
+                    content: Text(
+                        "Вы проиграли! Ваш счет: $score\nЛучший счет: $bestScore"),
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context); // Закрыть диалог
+                          resetGame(); // Перезапустить игру
+                        },
+                        child: Text("Попробовать снова"),
+                      ),
+                    ],
+                  ),
+            );
+          }
         }
       });
+      checkWinCondition();
     });
   }
 
@@ -261,11 +315,11 @@ class _GameScreenState extends State<GameScreen> {
           GameLogic.destroyAllAsteroids(
             asteroids: asteroids,
             explosions: explosions,
-            playExplosionSound: () => _audioPlayer.play(AssetSource('sounds/explosion.mp3')),
+            playExplosionSound: () => playEffect('sounds/explosion.mp3'),
             updateScore: (value) => setState(() => score += value),
           );
         }
-        _audioPlayer.play(AssetSource('sounds/bonus_sound.mp3'));
+        playEffect('sounds/bonus_sound.mp3');
         bonuses.remove(bonus);
       }
     }
@@ -278,7 +332,7 @@ class _GameScreenState extends State<GameScreen> {
       bullets: bullets,
       context: context,
     );
-    _audioPlayer.play(AssetSource('sounds/shoot.mp3'));
+    playEffect('sounds/shoot.mp3');;
   }
 
   // Сброс игры
@@ -298,16 +352,16 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   // Запуск саундтрека
-  void _startBackgroundMusic() async {
+  void _startBackgroundMusic() {
     if (isMusicPlaying) {
-      await backgroundMusicPlayer.play(AssetSource('sounds/background_music.mp3'));
+      backgroundMusicPlayer.play(AssetSource('sounds/background_music.mp3'));
       backgroundMusicPlayer.setReleaseMode(ReleaseMode.loop); // Зацикливаем музыку
     }
   }
 
   // Остановка саундтрека
-  void _stopBackgroundMusic() async {
-    await backgroundMusicPlayer.stop();
+  void _stopBackgroundMusic() {
+    backgroundMusicPlayer.stop();
   }
 
   // Переключение состояния саундтрека
@@ -478,7 +532,10 @@ class _GameScreenState extends State<GameScreen> {
               top: 10,
               right: 60, // Убираем кнопку паузы из этого места
               child: Row(
-                children: List.generate(lives, (index) => Icon(Icons.favorite, color: Colors.red, size: 20)),
+                children: List.generate(
+                  lives > 0 ? lives : 0, // Защита от отрицательных значений
+                      (index) => Icon(Icons.favorite, color: Colors.red, size: 20),
+                ),
               ),
             ),
             // Кнопки управления
@@ -496,6 +553,22 @@ class _GameScreenState extends State<GameScreen> {
               child: FloatingActionButton(
                 onPressed: () => moveSpaceship(0.1),
                 child: Icon(Icons.arrow_right),
+              ),
+            ),
+            Positioned(
+              top: 10,
+              right: 10,
+              child: Text(
+                widget.difficulty == DifficultyLevel.easy
+                    ? 'Легкий'
+                    : widget.difficulty == DifficultyLevel.hard
+                    ? 'Сложный'
+                    : 'Бесконечный',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],

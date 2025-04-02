@@ -10,7 +10,7 @@ class Asteroid {
   Asteroid({double? speed})
       : position = Offset(
     Random().nextDouble() * 300, // Случайная позиция по X
-    -50, // Начальная позиция над экраном
+    0, // Начальная позиция над экраном
   ),
         size = 50 + Random().nextDouble() * 50, // Случайный размер
         speed = speed ?? 1 + Random().nextDouble() * 2; // Скорость
@@ -48,7 +48,11 @@ class Bonus {
   Bonus({required this.type})
       : position = Offset(
     Random().nextDouble() * 300, // Случайная позиция по X
-    -50, // Начальная позиция над экраном
+    0, // Начальная позиция над экраном
   ),
         size = 30 + Random().nextDouble() * 20; // Случайный размер
 }
+
+enum DifficultyLevel { easy, hard, infinite }
+
+DifficultyLevel currentLevel = DifficultyLevel.easy;

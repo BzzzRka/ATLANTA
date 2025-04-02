@@ -33,11 +33,10 @@ class GameLogic {
     required List<Asteroid> asteroids,
     required BuildContext context,
     required int lives,
-    required Function(int) updateLives,
-    required Function() cancelMovement,
     required Function() playExplosionSound,
     required Function(Offset, double) addExplosion,
   }) {
+    print('Current lives before collision check: $lives');
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final spaceshipSize = screenWidth * 0.1;
@@ -68,20 +67,8 @@ class GameLogic {
       final distance = (spaceshipCenter - asteroidCenter).distance;
 
       // Проверка столкновения
-      if (distance <= spaceshipRadius + asteroidRadius) {
-        // Уменьшаем жизни
-        updateLives(lives - 1);
-        playExplosionSound();
-        addExplosion(spaceshipCenter, spaceshipSize);
-
-        // Проверяем, остались ли жизни
-        if (lives <= 0) {
-          cancelMovement();
-          return true; // Конец игры
-        } else {
-          return false; // Продолжаем игру
-        }
-      }
+      if (distance <= spaceshipRadius + asteroidRadius)
+        return true;
     }
     return false; // Нет столкновения
   }
