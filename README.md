@@ -45,12 +45,12 @@
 ## Скриншоты
 
 <div>
-  <img src="assets/screenshots/1.png" width="200" alt="Главное меню">
-  <img src="assets/screenshots/2.png" width="200" alt="Приветствие">
-  <img src="assets/screenshots/3.png" width="200" alt="Выбор сложности">
-  <img src="assets/screenshots/4.png" width="200" alt="Астероиды">
-  <img src="assets/screenshots/5.png" width="200" alt="Звезды">
-  <img src="assets/screenshots/6.png" width="200" alt="Конец">
+  <img src="assets/screenshots/1.jpg" width="200" alt="Главное меню">
+  <img src="assets/screenshots/2.jpg" width="200" alt="Приветствие">
+  <img src="assets/screenshots/3.jpg" width="200" alt="Выбор сложности">
+  <img src="assets/screenshots/4.jpg" width="200" alt="Астероиды">
+  <img src="assets/screenshots/5.jpg" width="200" alt="Звезды">
+  <img src="assets/screenshots/6.jpg" width="200" alt="Конец">
 </div>
 
 ---
