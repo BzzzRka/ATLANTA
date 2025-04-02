@@ -1,202 +1,509 @@
-import 'package:atlanta/register_screen.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
-import 'WorkoutScreen.dart';
-import 'add_workout_screen.dart';
-import 'edit_workout_screen.dart';
-import 'login_screen.dart';
-import 'main_screen.dart';
-import 'models.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'firebase_options.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'models.dart'; // Импортируем классы из models.dart
+import 'game_logic.dart'; // Импортируем логику игры
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized(); // необходимо
-
-  await Firebase.initializeApp( // необходимо
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  runApp(MyApp());
+void main() {
+  runApp(SpaceDefenderApp());
 }
 
-class MyApp extends StatelessWidget {
+class SpaceDefenderApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Atlanta Fitness',
+      title: 'Космический защитник',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      initialRoute: '/',
-      routes: {
-        '/': (context) => LoginScreen(),
-        '/home': (context) => MainScreen(),
-        '/register': (context) => RegisterScreen(),
-      },
+      home: GameScreen(),
     );
   }
 }
 
-class HomeScreen extends StatefulWidget {
+class GameScreen extends StatefulWidget {
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  _GameScreenState createState() => _GameScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  List<Workout> _workouts = [];
-  List<String> _workoutDocs = []; // Список для хранения ID документов
+class _GameScreenState extends State<GameScreen> {
+  double spaceshipPosition = 0; // Позиция корабля (от -1 до 1)
+  int score = 0; // Количество уничтоженных астероидов
+  int bestScore = 0; // Лучший счет
+  int lives = 3; // Количество жизней
+  List<Asteroid> asteroids = []; // Список астероидов
+  List<Bullet> bullets = []; // Список пуль
+  List<Explosion> explosions = []; // Список взрывов
+  List<Bonus> bonuses = []; // Список бонусов
+  Timer? asteroidTimer; // Таймер для создания новых астероидов
+  Timer? bonusTimer; // Таймер для создания новых бонусов
+  Timer? movementTimer; // Таймер для движения объектов
+  final AudioPlayer _audioPlayer = AudioPlayer(); // Для воспроизведения звуков
+  bool isPaused = false; // Флаг для состояния паузы
+  bool isMusicPlaying = true; // Флаг для состояния саундтрека
+  AudioPlayer backgroundMusicPlayer = AudioPlayer(); // Отдельный аудиоплеер для саундтрека
 
   @override
   void initState() {
     super.initState();
-    _loadWorkouts();
+    loadBestScore();
+    startAsteroidGeneration();
+    startBonusGeneration();
+    startMovement();
+    _startBackgroundMusic(); // Запускаем саундтрек
   }
 
-  void _loadWorkouts() {
-    FirebaseFirestore.instance.collection('Workouts').snapshots().listen((snapshot) {
-      List<Workout> workouts = [];
-      List<String> docIds = [];
+  @override
+  void dispose() {
+    asteroidTimer?.cancel();
+    bonusTimer?.cancel();
+    movementTimer?.cancel();
+    backgroundMusicPlayer.dispose(); // Освобождаем ресурсы аудиоплеера
+    super.dispose();
+  }
 
-      // Добавляем базовые тренировки
-      for (var workoutData in WorkoutData.workouts) {
-        workouts.add(
-          Workout(
-            title: workoutData['title'],
-            exercises: (workoutData['exercises'] as List)
-                .map((e) => Exercise(
-              name: e['name'],
-              durationInSeconds: e['durationInSeconds'] ?? 0,
-              repetitions: e['repetitions'] ?? 0,
-              isTimeBased: e['isTimeBased'] ?? true,
-            ))
-                .toList(),
-            isBasic: true,
-          ),
-        );
-        docIds.add(''); // Используем пустую строку для базовых тренировок
-      }
+  // Загрузка лучшего результата
+  Future<void> loadBestScore() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      bestScore = prefs.getInt('bestScore') ?? 0;
+    });
+  }
 
-      // Добавляем пользовательские тренировки
-      for (var doc in snapshot.docs) {
-        var data = doc.data();
+  // Сохранение лучшего результата
+  Future<void> saveBestScore() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('bestScore', bestScore);
+  }
 
-        // Проверяем, есть ли у документа поле title и не равно ли оно null
-        if (data.containsKey('title') && data['title'] != null) {
-          workouts.add(
-            Workout(
-              title: data['title'],
-              exercises: (data['exercises'] as List?)
-                  ?.map((e) => Exercise(
-                name: e['name'] ?? 'Unknown',
-                durationInSeconds: e['duration'] ?? 0,
-                repetitions: e['repetitions'] ?? 0,
-                isTimeBased: e['isTimeBased'] ?? true,
-              ))
-                  .toList() ??
-                  [],
-              isBasic: data['isBasic'] ?? false,
-            ),
-          );
-          docIds.add(doc.id);
-        } else {
-          print("Ошибка: документ ${doc.id} не содержит корректного title");
-        }
-      }
-
+  // Обновление лучшего результата
+  void updateBestScore() {
+    if (score > bestScore) {
       setState(() {
-        _workouts = workouts;
-        _workoutDocs = docIds;
+        bestScore = score;
+      });
+      saveBestScore();
+    }
+  }
+
+  // Логика перемещения корабля
+  void moveSpaceship(double deltaX) {
+    setState(() {
+      spaceshipPosition += deltaX;
+      if (spaceshipPosition > 1) spaceshipPosition = 1;
+      if (spaceshipPosition < -1) spaceshipPosition = -1;
+    });
+  }
+
+  // Генерация новых астероидов
+  void startAsteroidGeneration() {
+    asteroidTimer = Timer.periodic(Duration(seconds: 2), (timer) {
+      setState(() {
+        asteroids.add(Asteroid(speed: GameLogic.getAsteroidSpeed(score)));
       });
     });
   }
 
-
-  void _deleteWorkout(String docId) async {
-    if (docId.isNotEmpty) {
-      await FirebaseFirestore.instance.collection('Workouts').doc(docId).delete();
+  // Генерация новых бонусов
+  void startBonusGeneration() {
+    bonusTimer = Timer.periodic(Duration(seconds: 10), (timer) {
       setState(() {
-        _workouts.removeWhere((workout) => _workoutDocs.indexOf(docId) == _workouts.indexOf(workout));
-        _workoutDocs.remove(docId);
+        final randomType = Random().nextBool() ? 'life' : 'weapon'; // Случайный тип бонуса
+        bonuses.add(Bonus(type: randomType));
       });
+    });
+  }
+
+  // Движение объектов (астероиды, пули, бонусы)
+  void startMovement() {
+    movementTimer = Timer.periodic(Duration(milliseconds: 50), (timer) {
+      setState(() {
+        // Движение астероидов вниз
+        for (var asteroid in asteroids) {
+          asteroid.position = Offset(
+            asteroid.position.dx,
+            asteroid.position.dy + asteroid.speed,
+          );
+        }
+
+        // Движение пуль вверх
+        for (var bullet in bullets) {
+          bullet.position = Offset(
+            bullet.position.dx,
+            bullet.position.dy - bullet.speed,
+          );
+        }
+
+        // Движение бонусов вниз
+        for (var bonus in bonuses) {
+          bonus.position = Offset(
+            bonus.position.dx,
+            bonus.position.dy + 2, // Бонусы движутся медленнее
+          );
+        }
+
+        // Удаляем астероиды, которые вышли за пределы экрана
+        asteroids.removeWhere((asteroid) => asteroid.position.dy > 1000);
+
+        // Удаляем пули, которые вышли за пределы экрана
+        bullets.removeWhere((bullet) => bullet.position.dy < -100);
+
+        // Удаляем бонусы, которые вышли за пределы экрана
+        bonuses.removeWhere((bonus) => bonus.position.dy > 1000);
+
+        // Проверка столкновений пуль с астероидами
+        for (var bullet in bullets.toList()) {
+          for (var asteroid in asteroids.toList()) {
+            if (GameLogic.checkCollision(bullet, asteroid)) {
+              // Удаляем пулю и астероид
+              bullets.remove(bullet);
+              asteroids.remove(asteroid);
+              score++; // Увеличиваем счет
+
+              // Добавляем взрыв
+              explosions.add(
+                Explosion(
+                  position: Offset(
+                    asteroid.position.dx,
+                    asteroid.position.dy,
+                  ),
+                  size: asteroid.size,
+                ),
+              );
+
+              // Воспроизведение звука взрыва
+              _audioPlayer.play(AssetSource('sounds/explosion.mp3'));
+
+              break; // Переходим к следующей пуле
+            }
+          }
+        }
+
+        // Проверка столкновений бонусов с кораблем
+        _checkBonusCollision();
+
+        // Проверка столкновений астероидов с кораблем
+        if (GameLogic.checkShipCollision(
+          spaceshipPosition: spaceshipPosition,
+          asteroids: asteroids,
+          context: context,
+          lives: lives,
+          updateLives: (newLives) => setState(() => lives = newLives),
+          cancelMovement: () => movementTimer?.cancel(),
+          playExplosionSound: () => _audioPlayer.play(AssetSource('sounds/ship_explosion.mp3')),
+          addExplosion: (position, size) => setState(() {
+            explosions.add(Explosion(position: position, size: size));
+          }),
+        )) {
+          updateBestScore(); // Обновляем лучший счет
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text("Game Over"),
+              content: Text("Вы проиграли! Ваш счет: $score\nЛучший счет: $bestScore"),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context); // Закрыть диалог
+                    resetGame(); // Перезапустить игру
+                  },
+                  child: Text("Попробовать снова"),
+                ),
+              ],
+            ),
+          );
+        }
+      });
+    });
+  }
+
+  // Проверка столкновений бонусов с кораблем
+  void _checkBonusCollision() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final spaceshipSize = screenWidth * 0.1;
+
+    // Расчет позиции корабля
+    final spaceshipCenterX = screenWidth / 2 +
+        spaceshipPosition * screenWidth / 2 -
+        spaceshipSize / 2;
+    final spaceshipRect = Rect.fromLTWH(
+      spaceshipCenterX,
+      screenHeight * 0.8 - spaceshipSize * 0.8,
+      spaceshipSize,
+      spaceshipSize,
+    );
+
+    for (var bonus in bonuses.toList()) {
+      final bonusRect = Rect.fromLTWH(
+        bonus.position.dx,
+        bonus.position.dy,
+        bonus.size,
+        bonus.size,
+      );
+      if (spaceshipRect.overlaps(bonusRect)) {
+        // Применяем эффект бонуса
+        if (bonus.type == 'life') {
+          setState(() {
+            lives++;
+          });
+        } else if (bonus.type == 'weapon') {
+          // Активируем бонусное оружие
+          GameLogic.destroyAllAsteroids(
+            asteroids: asteroids,
+            explosions: explosions,
+            playExplosionSound: () => _audioPlayer.play(AssetSource('sounds/explosion.mp3')),
+            updateScore: (value) => setState(() => score += value),
+          );
+        }
+
+        // Воспроизведение звука получения бонуса
+        _audioPlayer.play(AssetSource('sounds/bonus_sound.mp3'));
+
+        // Удаляем бонус
+        bonuses.remove(bonus);
+      }
     }
+  }
+
+  // Выстрел из корабля
+  void shoot() {
+    GameLogic.shoot(
+      spaceshipPosition: spaceshipPosition,
+      bullets: bullets,
+      context: context,
+    );
+    _audioPlayer.play(AssetSource('sounds/shoot.mp3'));
+  }
+
+  // Сброс игры
+  void resetGame() {
+    setState(() {
+      spaceshipPosition = 0;
+      score = 0;
+      lives = 3;
+      asteroids.clear();
+      bullets.clear();
+      explosions.clear();
+      bonuses.clear();
+      startAsteroidGeneration();
+      startBonusGeneration();
+      startMovement();
+    });
+  }
+
+  // Запуск саундтрека
+  void _startBackgroundMusic() async {
+    if (isMusicPlaying) {
+      await backgroundMusicPlayer.play(AssetSource('sounds/background_music.mp3'));
+      backgroundMusicPlayer.setReleaseMode(ReleaseMode.loop); // Зацикливаем музыку
+    }
+  }
+
+  // Остановка саундтрека
+  void _stopBackgroundMusic() async {
+    await backgroundMusicPlayer.stop();
+  }
+
+  // Переключение состояния саундтрека
+  void toggleMusic() {
+    setState(() {
+      isMusicPlaying = !isMusicPlaying;
+      if (isMusicPlaying) {
+        _startBackgroundMusic();
+      } else {
+        _stopBackgroundMusic();
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('My Workouts')),
-      body: ListView.builder(
-        itemCount: _workouts.length,
-        itemBuilder: (context, index) {
-          final workout = _workouts[index];
-          final docId = _workoutDocs[index]; // Теперь docId правильно заполняется
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
 
-          return Card(
-            margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            elevation: 4,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(color: workout.isBasic ? Colors.teal : Colors.blue, width: 2),
+    final spaceshipSize = screenWidth * 0.1;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Космический защитник'),
+        actions: [
+          // Кнопка паузы
+          IconButton(
+            onPressed: () {
+              setState(() {
+                isPaused = !isPaused; // Переключаем состояние паузы
+                if (isPaused) {
+                  movementTimer?.cancel(); // Останавливаем таймеры
+                  asteroidTimer?.cancel();
+                  bonusTimer?.cancel();
+                } else {
+                  startMovement(); // Возобновляем движение
+                  startAsteroidGeneration();
+                  startBonusGeneration();
+                }
+              });
+            },
+            icon: Icon(isPaused ? Icons.play_arrow : Icons.pause),
+          ),
+          // Кнопка включения/выключения саундтрека
+          IconButton(
+            onPressed: toggleMusic,
+            icon: Icon(isMusicPlaying ? Icons.music_note : Icons.music_off),
+          ),
+        ],
+      ),
+      body: GestureDetector(
+        onTap: shoot, // Выстрел при нажатии на экран
+        child: Stack(
+          children: [
+            // Фон
+            Image.asset(
+              'assets/background.jpg',
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
             ),
-            child: ListTile(
-              contentPadding: EdgeInsets.all(16),
-              title: Text(
-                workout.title,
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            // Космический корабль
+            Positioned(
+              bottom: screenHeight * 0.2,
+              left: screenWidth / 2 +
+                  spaceshipPosition * screenWidth / 2 -
+                  spaceshipSize / 2,
+              child: Image.asset(
+                'assets/spaceship.png',
+                width: spaceshipSize,
+                height: spaceshipSize,
               ),
-              subtitle: Text('${workout.exercises.length} exercises'),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.play_arrow, color: Colors.green),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => WorkoutScreen(workout: workout),
-                        ),
-                      );
-                    },
+            ),
+            // Астероиды
+            ...asteroids.map((asteroid) {
+              return Positioned(
+                top: asteroid.position.dy,
+                left: asteroid.position.dx,
+                child: Image.asset(
+                  'assets/asteroid.png',
+                  width: asteroid.size,
+                  height: asteroid.size,
+                ),
+              );
+            }).toList(),
+            // Пули
+            ...bullets.map((bullet) {
+              return Positioned(
+                top: bullet.position.dy,
+                left: bullet.position.dx,
+                child: Container(
+                  width: bullet.width,
+                  height: bullet.height,
+                  decoration: BoxDecoration(
+                    color: Colors.lightBlueAccent, // Цвет лазера
+                    borderRadius: BorderRadius.circular(5), // Закругленные края
                   ),
-                  if (!workout.isBasic && docId.isNotEmpty) // Убираем кнопку удаления для базовых тренировок
-                    IconButton(
-                      icon: Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => _deleteWorkout(docId),
+                ),
+              );
+            }).toList(),
+            // Взрывы
+            ...explosions.map((explosion) {
+              final opacity = 1.0 - (DateTime.now().difference(explosion.startTime).inMilliseconds / 500);
+              if (opacity <= 0) {
+                // Создаем копию списка и удаляем старые взрывы
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  setState(() {
+                    explosions.remove(explosion);
+                  });
+                });
+                return SizedBox.shrink();
+              }
+              return Positioned(
+                top: explosion.position.dy,
+                left: explosion.position.dx,
+                child: Opacity(
+                  opacity: opacity,
+                  child: Container(
+                    width: explosion.size,
+                    height: explosion.size,
+                    decoration: BoxDecoration(
+                      color: Colors.orange,
+                      shape: BoxShape.circle,
                     ),
+                  ),
+                ),
+              );
+            }).toList(),
+            // Бонусы
+            ...bonuses.map((bonus) {
+              return Positioned(
+                top: bonus.position.dy,
+                left: bonus.position.dx,
+                child: Image.asset(
+                  bonus.type == 'life' ? 'assets/bonus_life.gif' : 'assets/bonus_weapon.gif',
+                  width: bonus.size,
+                  height: bonus.size,
+                ),
+              );
+            }).toList(),
+            // Счётчик очков и лучший счет
+            Positioned(
+              top: 10,
+              left: 10,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Очки: $score',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    'Лучший: $bestScore',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
                 ],
               ),
-              onTap: () {
-                if (!workout.isBasic && docId.isNotEmpty) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => EditWorkoutScreen(workout: workout, docId: docId),
-                    ),
-                  );
-                }
-              },
             ),
-          );
-        },
+            // Жизни
+            Positioned(
+              top: 10,
+              right: 60, // Убираем кнопку паузы из этого места
+              child: Row(
+                children: List.generate(lives, (index) => Icon(Icons.favorite, color: Colors.red, size: 20)),
+              ),
+            ),
+          ],
+        ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => AddWorkoutScreen()),
-          );
-        },
-        child: Icon(Icons.add),
+      // Кнопки управления
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Левая кнопка движения
+          Padding(
+            padding: const EdgeInsets.only(left: 20),
+            child: FloatingActionButton(
+              onPressed: () => moveSpaceship(-0.1),
+              child: Icon(Icons.arrow_left),
+            ),
+          ),
+          // Правая кнопка движения
+          Padding(
+            padding: const EdgeInsets.only(right: 20),
+            child: FloatingActionButton(
+              onPressed: () => moveSpaceship(0.1),
+              child: Icon(Icons.arrow_right),
+            ),
+          ),
+        ],
       ),
     );
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _loadWorkouts();
   }
 }
