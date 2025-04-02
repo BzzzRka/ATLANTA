@@ -5,19 +5,26 @@ import 'models.dart'; // Импортируем классы из models.dart
 class GameLogic {
   // Проверка столкновений между пулей и астероидом
   static bool checkCollision(Bullet bullet, Asteroid asteroid) {
-    final bulletRect = Rect.fromLTWH(
-      bullet.position.dx,
-      bullet.position.dy,
-      bullet.width,
-      bullet.height,
+    // Центр пули
+    final bulletCenter = Offset(
+      bullet.position.dx + bullet.width / 2,
+      bullet.position.dy + bullet.height / 2,
     );
-    final asteroidRect = Rect.fromLTWH(
-      asteroid.position.dx,
-      asteroid.position.dy,
-      asteroid.size,
-      asteroid.size,
+
+    // Центр астероида
+    final asteroidCenter = Offset(
+      asteroid.position.dx + asteroid.size / 2,
+      asteroid.position.dy + asteroid.size / 2,
     );
-    return bulletRect.overlaps(asteroidRect);
+
+    // Радиус астероида (половина его размера)
+    final asteroidRadius = asteroid.size / 2;
+
+    // Расстояние между центрами
+    final distance = (bulletCenter - asteroidCenter).distance;
+
+    // Проверка столкновения
+    return distance <= asteroidRadius;
   }
 
   // Проверка столкновений астероидов с кораблем
@@ -35,43 +42,41 @@ class GameLogic {
     final screenHeight = MediaQuery.of(context).size.height;
     final spaceshipSize = screenWidth * 0.1;
 
-    // Расчет позиции корабля
+    // Центр корабля
     final spaceshipCenterX = screenWidth / 2 +
         spaceshipPosition * screenWidth / 2 -
         spaceshipSize / 2;
-    final spaceshipRect = Rect.fromLTWH(
-      spaceshipCenterX,
-      screenHeight * 0.8 - spaceshipSize * 0.8,
-      spaceshipSize,
-      spaceshipSize,
+    final spaceshipCenter = Offset(
+      spaceshipCenterX + spaceshipSize / 2, // Центр корабля по X
+      screenHeight * 0.8 - spaceshipSize * 0.8 + spaceshipSize / 2, // Центр корабля по Y
     );
 
+    // Радиус корабля (половина его размера)
+    final spaceshipRadius = spaceshipSize / 2;
+
     for (var asteroid in asteroids) {
-      final asteroidRect = Rect.fromLTWH(
-        asteroid.position.dx,
-        asteroid.position.dy,
-        asteroid.size,
-        asteroid.size,
+      // Центр астероида
+      final asteroidCenter = Offset(
+        asteroid.position.dx + asteroid.size / 2,
+        asteroid.position.dy + asteroid.size / 2,
       );
-      if (spaceshipRect.overlaps(asteroidRect)) {
+
+      // Радиус астероида
+      final asteroidRadius = asteroid.size / 2;
+
+      // Расстояние между центрами
+      final distance = (spaceshipCenter - asteroidCenter).distance;
+
+      // Проверка столкновения
+      if (distance <= spaceshipRadius + asteroidRadius) {
         // Уменьшаем жизни
         updateLives(lives - 1);
-
-        // Воспроизведение звука взрыва корабля
         playExplosionSound();
-
-        // Добавляем взрыв корабля
-        addExplosion(
-          Offset(
-            spaceshipCenterX,
-            screenHeight * 0.8 - spaceshipSize * 0.8,
-          ),
-          spaceshipSize,
-        );
+        addExplosion(spaceshipCenter, spaceshipSize);
 
         // Проверяем, остались ли жизни
         if (lives <= 0) {
-          cancelMovement(); // Останавливаем игру
+          cancelMovement();
           return true; // Конец игры
         } else {
           return false; // Продолжаем игру
@@ -80,7 +85,6 @@ class GameLogic {
     }
     return false; // Нет столкновения
   }
-
   // Уничтожение всех астероидов на экране
   static void destroyAllAsteroids({
     required List<Asteroid> asteroids,
@@ -121,17 +125,17 @@ class GameLogic {
     final screenHeight = MediaQuery.of(context).size.height;
     final spaceshipSize = screenWidth * 0.1;
 
-    // Расчет позиции корабля
+    // Расчет центра корабля
     final spaceshipCenterX = screenWidth / 2 +
         spaceshipPosition * screenWidth / 2 -
         spaceshipSize / 2;
 
-    // Одна пуля из передней части корабля
+    // Пуля вылетает из центра корабля (по X) и из передней части (по Y)
     bullets.add(
       Bullet(
         position: Offset(
-          spaceshipCenterX + spaceshipSize / 2 - 2.5, // Центр пушки (половина ширины лазера)
-          screenHeight * 0.8 - spaceshipSize * 0.8, // Передняя часть корабля
+          spaceshipCenterX + spaceshipSize / 2 - 2.5, // Центр корабля по X
+          screenHeight * 0.8 - spaceshipSize * 0.8 - 20, // Передняя часть корабля по Y
         ),
       ),
     );

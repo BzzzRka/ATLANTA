@@ -225,32 +225,39 @@ class _GameScreenState extends State<GameScreen> {
     final screenHeight = MediaQuery.of(context).size.height;
     final spaceshipSize = screenWidth * 0.1;
 
-    // Расчет позиции корабля
+    // Центр корабля
     final spaceshipCenterX = screenWidth / 2 +
         spaceshipPosition * screenWidth / 2 -
         spaceshipSize / 2;
-    final spaceshipRect = Rect.fromLTWH(
-      spaceshipCenterX,
-      screenHeight * 0.8 - spaceshipSize * 0.8,
-      spaceshipSize,
-      spaceshipSize,
+    final spaceshipCenter = Offset(
+      spaceshipCenterX + spaceshipSize / 2,
+      screenHeight * 0.8 - spaceshipSize * 0.8 + spaceshipSize / 2,
     );
 
+    // Радиус корабля
+    final spaceshipRadius = spaceshipSize / 2;
+
     for (var bonus in bonuses.toList()) {
-      final bonusRect = Rect.fromLTWH(
-        bonus.position.dx,
-        bonus.position.dy,
-        bonus.size,
-        bonus.size,
+      // Центр бонуса
+      final bonusCenter = Offset(
+        bonus.position.dx + bonus.size / 2,
+        bonus.position.dy + bonus.size / 2,
       );
-      if (spaceshipRect.overlaps(bonusRect)) {
+
+      // Радиус бонуса
+      final bonusRadius = bonus.size / 2;
+
+      // Расстояние между центрами
+      final distance = (spaceshipCenter - bonusCenter).distance;
+
+      // Проверка столкновения
+      if (distance <= spaceshipRadius + bonusRadius) {
         // Применяем эффект бонуса
         if (bonus.type == 'life') {
           setState(() {
             lives++;
           });
         } else if (bonus.type == 'weapon') {
-          // Активируем бонусное оружие
           GameLogic.destroyAllAsteroids(
             asteroids: asteroids,
             explosions: explosions,
@@ -258,11 +265,7 @@ class _GameScreenState extends State<GameScreen> {
             updateScore: (value) => setState(() => score += value),
           );
         }
-
-        // Воспроизведение звука получения бонуса
         _audioPlayer.play(AssetSource('sounds/bonus_sound.mp3'));
-
-        // Удаляем бонус
         bonuses.remove(bonus);
       }
     }
@@ -368,14 +371,14 @@ class _GameScreenState extends State<GameScreen> {
             ),
             // Космический корабль
             Positioned(
-              bottom: screenHeight * 0.2,
+              bottom: screenHeight * 0.1,
               left: screenWidth / 2 +
                   spaceshipPosition * screenWidth / 2 -
-                  spaceshipSize / 2,
+                  1.5*spaceshipSize / 2,
               child: Image.asset(
                 'assets/spaceship.png',
-                width: spaceshipSize,
-                height: spaceshipSize,
+                width: 1.5*spaceshipSize,
+                height: 1.5*spaceshipSize,
               ),
             ),
             // Астероиды
@@ -478,32 +481,27 @@ class _GameScreenState extends State<GameScreen> {
                 children: List.generate(lives, (index) => Icon(Icons.favorite, color: Colors.red, size: 20)),
               ),
             ),
+            // Кнопки управления
+            Positioned(
+              bottom: screenHeight * 0.3, // Расположение кнопок ниже середины
+              left: 20, // Отступ слева
+              child: FloatingActionButton(
+                onPressed: () => moveSpaceship(-0.1),
+                child: Icon(Icons.arrow_left),
+              ),
+            ),
+            Positioned(
+              bottom: screenHeight * 0.3, // То же расположение по вертикали
+              right: 20, // Отступ справа
+              child: FloatingActionButton(
+                onPressed: () => moveSpaceship(0.1),
+                child: Icon(Icons.arrow_right),
+              ),
+            ),
           ],
         ),
       ),
-      // Кнопки управления
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Левая кнопка движения
-          Padding(
-            padding: const EdgeInsets.only(left: 20),
-            child: FloatingActionButton(
-              onPressed: () => moveSpaceship(-0.1),
-              child: Icon(Icons.arrow_left),
-            ),
-          ),
-          // Правая кнопка движения
-          Padding(
-            padding: const EdgeInsets.only(right: 20),
-            child: FloatingActionButton(
-              onPressed: () => moveSpaceship(0.1),
-              child: Icon(Icons.arrow_right),
-            ),
-          ),
-        ],
-      ),
+
     );
   }
 }
