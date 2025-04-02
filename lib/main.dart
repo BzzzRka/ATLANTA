@@ -4,12 +4,17 @@ import 'package:atlanta/MainMenu.dart';
 import 'package:atlanta/res_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dif_select.dart';
 import 'models.dart'; // Импортируем классы из models.dart
 import 'game_logic.dart'; // Импортируем логику игры
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp, // Разрешить только вертикальную ориентацию
+  ]);
   runApp(SpaceDefenderApp());
 }
 
@@ -35,7 +40,7 @@ class GameScreen extends StatefulWidget {
   _GameScreenState createState() => _GameScreenState();
 }
 
-class _GameScreenState extends State<GameScreen> {
+class _GameScreenState extends State<GameScreen> with WidgetsBindingObserver {
   double spaceshipPosition = 0; // Позиция корабля (от -1 до 1)
   int score = 0; // Количество уничтоженных астероидов
   int bestScore = 0; // Лучший счет
@@ -57,7 +62,7 @@ class _GameScreenState extends State<GameScreen> {
   void initState() {
     super.initState();
     loadBestScore();
-
+    WidgetsBinding.instance.addObserver(this); // Подписываемся на изменения состояния
     // Set target score based on difficulty
     if (widget.difficulty == DifficultyLevel.easy) {
       targetScore = 10;
@@ -75,11 +80,32 @@ class _GameScreenState extends State<GameScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this); // Отписываемся от изменений состояния
     asteroidTimer?.cancel();
     bonusTimer?.cancel();
     movementTimer?.cancel();
     backgroundMusicPlayer.dispose(); // Освобождаем ресурсы аудиоплеера
     super.dispose();
+  }
+
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    if (state == AppLifecycleState.paused) {
+      // Приложение свернуто — останавливаем музыку и таймеры
+      _stopBackgroundMusic();
+      movementTimer?.cancel();
+      asteroidTimer?.cancel();
+      bonusTimer?.cancel();
+    } else if (state == AppLifecycleState.resumed) {
+      // Приложение снова активно — возобновляем музыку и таймеры
+      if (isMusicPlaying) {
+        _startBackgroundMusic();
+      }
+      startMovement();
+      startAsteroidGeneration();
+      startBonusGeneration();
+    }
   }
 
   // Check if the player has won

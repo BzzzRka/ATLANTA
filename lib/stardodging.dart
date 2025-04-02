@@ -19,7 +19,7 @@ class StarDodgingScreen extends StatefulWidget {
   _StarDodgingScreenState createState() => _StarDodgingScreenState();
 }
 
-class _StarDodgingScreenState extends State<StarDodgingScreen> {
+class _StarDodgingScreenState extends State<StarDodgingScreen> with WidgetsBindingObserver {
   double spaceshipPosition = 0; // Позиция корабля (от -1 до 1)
   int score = 0; // Количество уничтоженных астероидов
   int bestScore1 = 0; // Лучший счет
@@ -41,6 +41,7 @@ class _StarDodgingScreenState extends State<StarDodgingScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this); // Подписываемся на изменения состояния
     loadBestScore();
     targetScore = 60;
     startAsteroidGeneration();
@@ -52,12 +53,36 @@ class _StarDodgingScreenState extends State<StarDodgingScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this); // Отписываемся от изменений состояния
     asteroidTimer?.cancel();
     bonusTimer?.cancel();
     gameTimer?.cancel();
     movementTimer?.cancel();
     backgroundMusicPlayer.dispose(); // Освобождаем ресурсы аудиоплеера
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    if (state == AppLifecycleState.paused) {
+      // Приложение свернуто — останавливаем музыку и таймеры
+      _stopBackgroundMusic();
+      movementTimer?.cancel();
+      asteroidTimer?.cancel();
+      gameTimer?.cancel();
+      bonusTimer?.cancel();
+    } else if (state == AppLifecycleState.resumed) {
+      // Приложение снова активно — возобновляем музыку и таймеры
+      if (isMusicPlaying) {
+        _startBackgroundMusic();
+      }
+      startMovement();
+      startAsteroidGeneration();
+      startBonusGeneration();
+      startGameTimer();
+    }
   }
 
   // Отсчет времени игры
